@@ -1,0 +1,10 @@
+dist
+docs
+hide
+node_modules
+notebooks
+tools
+
+.env
+asrSession-out.wav
+README.md
