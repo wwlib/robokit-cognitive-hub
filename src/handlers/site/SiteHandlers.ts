@@ -2,6 +2,7 @@ import { Request, Response, Handler } from 'express'
 import { AuthRequest } from '@types'
 import { StatusCodes } from 'http-status-codes'
 import { Model } from '@model'
+import Connection from "src/db/Connection";
 
 // handlebars templates are loaded by WebPack using handlebars-loader
 // https://www.npmjs.com/package/handlebars-loader
@@ -34,25 +35,32 @@ export class SiteHandlers {
     public signinHandler: Handler = async (req: AuthRequest, res: Response) => {
         console.log('signinHandler')
         Model.getInstance().onRequest()
-        res.status(StatusCodes.OK).send(this.getSigninContent(req.auth?.userId))
+        res.status(StatusCodes.OK).send(this.getSigninContent(req.auth?.accountId))
     }
 
-    private getSigninContent(userId?: string) {
-        return signin_handlebars({ userId: userId })
+    private getSigninContent(accountId?: string) {
+        return signin_handlebars({ accountId: accountId })
     }
 
     public dashboardHandler: Handler = async (req: AuthRequest, res: Response) => {
         console.log('dashboardHandler')
         Model.getInstance().onRequest()
-        res.status(StatusCodes.OK).send(this.getDashboardContent(req.auth?.userId))
+        res.status(StatusCodes.OK).send(this.getDashboardContent(req.auth?.accountId))
     }
 
-    private getDashboardContent(userId?: string) {
+    private getDashboardContent(accountId?: string) {
         const data = []
         for (let i=0; i<7; i++) {
             data.push(15000 + Math.floor(Math.random()*5000))
         }
-        return dashboard_handlebars({ linkStates: { dashboard: 'active', console: '' }, userId: userId, requestCount: Model.getInstance().requestCount, chartData: data.join(',') })
+        const connections: Connection[] | undefined = Model.getInstance().getDeviceConnections()
+        let socketInfo: string[] = []
+        if (connections) {
+            socketInfo = connections.map((connection: Connection) => {
+                return connection.toString()
+            })
+        }
+        return dashboard_handlebars({ linkStates: { dashboard: 'active', console: '' }, accountId: accountId, requestCount: Model.getInstance().requestCount, chartData: data.join(','), connections: socketInfo.join(',') })
     }
 
     public consoleHandler: Handler = async (req: AuthRequest, res: Response) => {
@@ -66,11 +74,11 @@ export class SiteHandlers {
             summary = 'Model:resetRequestCount.'
             details = 'requestCount reset successfully.'
         }
-        res.status(StatusCodes.OK).send(this.getConsoleContent(req.auth?.userId, command, summary, details))
+        res.status(StatusCodes.OK).send(this.getConsoleContent(req.auth?.accountId, command, summary, details))
     }
 
-    private getConsoleContent(userId: string | undefined, command: string, summary: string, details: string) {
-        return console_handlebars({ linkStates: { dashboard: '', console: 'active' }, userId: userId, command, requestCount: Model.getInstance().requestCount, summary, details })
+    private getConsoleContent(accountId: string | undefined, command: string, summary: string, details: string) {
+        return console_handlebars({ linkStates: { dashboard: '', console: 'active' }, accountId: accountId, command, requestCount: Model.getInstance().requestCount, summary, details })
     }
 
     public forbiddenHandler: Handler = async (req: AuthRequest, res: Response) => {

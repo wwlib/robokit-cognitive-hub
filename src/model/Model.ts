@@ -1,3 +1,6 @@
+import ConnectionManager from "src/db/ConnectionManager";
+import Connection, { ConnectionType } from "src/db/Connection";
+
 export class Model {
     private static instance: Model;
 
@@ -23,5 +26,11 @@ export class Model {
 
     resetRequestCount() {
         this._requestsCount = 0
+    }
+
+    //// connections
+
+    getDeviceConnections(): Connection[] | undefined {
+        return ConnectionManager.getInstance().getConnectionsAsArray(ConnectionType.DEVICE)
     }
 }

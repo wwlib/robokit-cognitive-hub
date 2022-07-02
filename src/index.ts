@@ -8,6 +8,9 @@ import { ExpressRouterWrapper } from './util/ExpressRouterWrapper'
 // import { WSSRoutes, setupWebSocketServer } from './util/WebSocketServerWrapper'
 import ASRSessionHandler from './asr/ASRSessionHandler';
 import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
+import ConnectionManager from 'src/db/ConnectionManager';
+import { ConnectionEventType, ConnectionType } from 'src/db/Connection'
+import { JwtAuth } from './auth/JwtAuth'
 
 const cookieParser = require("cookie-parser");
 
@@ -72,7 +75,7 @@ const main = async () => {
   // socket-io routes
 
   const ioRobokitDeviceServer = new SocketIoServer(httpServer, {
-    path: "/socket-io/"
+    path: "/socket-device/"
   });
 
   ioRobokitDeviceServer.use(function (socket, next) {
@@ -83,7 +86,18 @@ const main = async () => {
       console.log("auth token", token);
       // TODO: do some security check with token
       // ...
-
+      if (!token) {
+        return next(new Error('socket.io connection: unauthorized: Missing token.'))
+      }
+      let decodedAccessToken: any
+      try {
+        decodedAccessToken =  JwtAuth.decodeAccessToken(token)
+        console.log(decodedAccessToken)
+        socket.data.accountId = decodedAccessToken.accountId
+      } catch (error: any) {
+        console.error(error)
+        return next(new Error('socket.io connection: unauthorized: Invalid token.'))
+      }
       return next();
     }
     // return next();
@@ -94,14 +108,18 @@ const main = async () => {
 
   ioRobokitDeviceServer.on('connection', function (socket) {
     console.log(`socket.io: on connection:`, socket.id);
+    ConnectionManager.getInstance().addConnection(ConnectionType.DEVICE, socket, socket.data.accountId)
     socket.emit('message', { message: 'A new device has joined!' });
+
     socket.on('message', (message) => {
       console.log(`on message: ${message}`, socket.id);
+      ConnectionManager.getInstance().onConnectionEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM)
       socket.emit('message', { message: message });
     });
 
     socket.once('disconnect', function (reason) {
       console.log(`on disconnect: ${reason}: ${socket.id}`);
+      ConnectionManager.getInstance().removeConnection(ConnectionType.DEVICE, socket)
     });
 
     // ASR streaming
@@ -126,9 +144,10 @@ const main = async () => {
       asrSessionHandler.startAudio()
     })
 
-    socket.on('asrAudio', (data) => {
+    socket.on('asrAudio', (data: Buffer) => {
       console.log(`on asrAudio`, data);
       if (data) {
+        ConnectionManager.getInstance().onConnectionEvent(ConnectionType.DEVICE, socket, ConnectionEventType.AUDIO_BYTES_FROM, data.length)
         asrSessionHandler.provideAudio(data)
       } else {
         console.log(`on asrAudio: NOT sending empty audio data.`)

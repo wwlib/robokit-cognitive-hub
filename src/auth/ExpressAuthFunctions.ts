@@ -26,15 +26,15 @@ export const authHttp = (permissions: string[]) =>
         accessToken = req.cookies[ACCESS_TOKEN_NAME] as string
       }
       const decodedAccessToken = JwtAuth.decodeAccessToken(accessToken, refreshToken)
-      const userId = decodedAccessToken ? decodedAccessToken.userId : ''
+      const accountId = decodedAccessToken ? decodedAccessToken.accountId : ''
       checkPermissions(expectedPermissions, decodedAccessToken)
       req.auth = {
-        userId,
+        accountId,
         accessTokenPayload: decodedAccessToken
       }
       next();
     } catch (error: any) {
-      console.error(error)
+      console.error('Error:', error.message)
       if (error.code === StatusCodes.FORBIDDEN) {
         res.redirect('/forbidden')
       } else {
@@ -66,7 +66,7 @@ export const checkPermissions = (expectedPermissions: string[], decodedAccessTok
     return
   }
   if (!decodedAccessToken) {
-    throw errors.ForbiddenError('Invalid access token payload.')
+    throw new Error('decodedAccessToken is undefined.')
   }
   const tokenPermissions = getPermissionsFromDecodedAccessToken(decodedAccessToken)
   if (expectedPermissions.every((perm) => tokenPermissions.includes(perm))) {

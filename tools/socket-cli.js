@@ -56,7 +56,7 @@ function connect(token) {
     console.log('token:', token);
     // const ws = new WebSocket(process.env.URL, { headers: { Authorization: `Bearer ${token}` } })
     const ws = io(process.env.URL, {
-        path: process.env.SOCKET_PATH,
+        path: process.env.DEVICE_SOCKET_PATH,
         extraHeaders: {
             Authorization: `Bearer ${token}`,
         },
