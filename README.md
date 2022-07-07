@@ -57,13 +57,13 @@ Example auth request:
 curl --location --request POST 'http://localhost:8000/auth' \
      --header 'Content-Type: application/json' \
      --data-raw '{
-       "username": "user1",
+       "accountId": "robot1",
        "password": "12345!"
      }'
 ```
 
 ```json
-{"message":"Logged in successfully.","access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyMSIsImF1dGgiOnsicGVybWlzc2lvbnMiOlt7InNjb3BlcyI6WyJyZWFkIl0sInJlc291cmNlIjoiZXhhbXBsZSJ9XX0sImlhdCI6MTY1NDM2NzQ5NSwiZXhwIjoxNjU0MzY3NTU1fQ.J7yxsSoOYTvNQtMkLrmlY_TEZT6x4jEvYvnI_Gqr64Q","refresh_toke":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyMSIsImlhdCI6MTY1NDM2NzQ5NSwiZXhwIjoxNjU0NDUzODk1fQ.Lj7fairF_ABjeXzIc_-38aMqfj3ce08fd33V3ymoa04","user_id":"user1"}
+{"message":"Logged in successfully.","access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJyb2JvdDEiLCJhdXRoIjp7InBlcm1pc3Npb25zIjpbeyJzY29wZXMiOlsicmVhZCIsImFkbWluIl0sInJlc291cmNlIjoiZXhhbXBsZSJ9XX0sImlhdCI6MTY1NjgxODY3MSwiZXhwIjoxNjU2ODE4NzMxfQ.TB_UUwFkc0fQLYi1q80hedBMvR7h4EIHzTSIoVTKOeA","refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJyb2JvdDEiLCJpYXQiOjE2NTY4MTg2NzEsImV4cCI6MTY1NjkwNTA3MX0.VDMlgUPiP-0r9EJ4_Q93gqufPBCmqIYXQ5PCr9UsJ8s","account_id":"robot1"}
 ```
 
 ### http - dashboard

@@ -17,11 +17,12 @@ export class MockAuthHandlers {
   }
 
   public authHandler: Handler = async (req: AuthRequest, res: Response) => {
-    const username = req.body?.username || req.query?.username
+    const accountId = req.body?.accountId || req.query?.accountId
     const password = req.body?.password || req.query?.password
+    console.log('authHandler:', accountId, password)
     // signIn
-    if (username && password) {
-      const authResult: AuthResult = await JwtAuth.signIn(username, password)
+    if (accountId && password) {
+      const authResult: AuthResult = await JwtAuth.signIn(accountId, password)
       console.info('authHandler: access_token:', authResult.access_token)
       res.cookie(ACCESS_TOKEN_NAME, authResult.access_token, {
         httpOnly: true,

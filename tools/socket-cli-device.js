@@ -6,26 +6,29 @@ const readline = require("readline");
 const axios = require('axios');
 const { io } = require("socket.io-client");
 const timesync = require('timesync');
+const rcs = require('robokit-command-system')
 
 const { WaveFileAudioSource } = require('cognitiveserviceslib')
 
 dotenv.config();
 
-// curl --location --request POST 'https://localhost:8000/auth' \
-//     --header 'Content-Type: application/json' \
-//     --data-raw '{
-//        "username": "user1",
-//        "password": "asldkfj"
-//      }'
+/*
+curl --location --request POST 'http://localhost:8000/auth' \
+     --header 'Content-Type: application/json' \
+     --data-raw '{
+       "accountId": "robot1",
+       "password": "12345!"
+     }'
+*/
 
 async function getToken() {
     if (process.env.TOKEN) {
         return process.env.TOKEN;
-    } else if (process.env.AUTH_URL && process.env.USERNAME && process.env.PASSWORD) {
+    } else if (process.env.AUTH_URL && process.env.DEVICE_ACCOUNT_ID && process.env.DEVICE_PASSWORD) {
         return new Promise((resolve, reject) => {
             axios.post(process.env.AUTH_URL, {
-                username: process.env.USERNAME,
-                password: process.env.PASSWORD
+                accountId: process.env.DEVICE_ACCOUNT_ID,
+                password: process.env.DEVICE_PASSWORD
             },
                 {
                     headers: { 'Content-Type': 'application/json' }
@@ -41,7 +44,7 @@ async function getToken() {
 
         });
     } else {
-        return '';
+        throw new Error('Unable to get token.');
     }
 }
 
@@ -55,7 +58,7 @@ function connect(token) {
     console.log(`URL:`, process.env.URL);
     console.log('token:', token);
     // const ws = new WebSocket(process.env.URL, { headers: { Authorization: `Bearer ${token}` } })
-    const ws = io(process.env.URL, {
+    const socket = io(process.env.URL, {
         path: process.env.DEVICE_SOCKET_PATH,
         extraHeaders: {
             Authorization: `Bearer ${token}`,
@@ -66,7 +69,7 @@ function connect(token) {
     // timesync
 
     const ts = timesync.create({
-        server: ws,
+        server: socket,
         interval: 5000
     });
 
@@ -76,6 +79,15 @@ function connect(token) {
 
     ts.on('change', function (offset) {
         console.log('timesync: changed offset: ' + offset + ' ms');
+        const command = {
+            id: 'tbd',
+            type: 'sync',
+            name: 'syncOffset',
+            payload: {
+                syncOffset: offset,
+            }
+        }
+        socket.emit('command', command)
     });
 
     ts.send = function (socket, data, timeout) {
@@ -90,38 +102,49 @@ function connect(token) {
         });
     };
 
-    ws.on('timesync', function (data) {
+    socket.on('timesync', function (data) {
         //console.log('receive', data);
         ts.receive(null, data);
     });
 
     // socket messages
 
-    ws.on("connect", () => {
-        console.log(ws.id); // "G5p5..."
+    socket.on("connect", () => {
+        console.log(socket.id); // "G5p5..."
     });
 
-    ws.on('disconnect', function () {
+    socket.on('disconnect', function () {
         console.log(`on disconnect. closing...`);
         process.exit(0);
     });
 
-    ws.on('message', function (data) {
+    rcs.CommandProcessor.getInstance().on('commandCompleted', (commandAck) => {
+        console.log(`command completed:`, commandAck)
+        socket.emit('command', commandAck)
+    })
+
+    socket.on('command', function (command) {
+        console.log('command', command);
+        rcs.CommandProcessor.getInstance().processCommand(command)
+        ask("> ");
+    });
+
+    socket.on('message', function (data) {
         console.log(data.message);
         ask("> ");
     });
 
-    ws.emit('message', 'CONNECTED');
+    socket.emit('message', 'CONNECTED');
 
-    ws.on('asrSOS', function () {
+    socket.on('asrSOS', function () {
         console.log(`asrSOS`);
     });
 
-    ws.on('asrResult', function (data) {
+    socket.on('asrResult', function (data) {
         console.log(`asrResult`, data);
     });
 
-    ws.on('asrEnded', function (data) {
+    socket.on('asrEnded', function (data) {
         console.log(`asrEnded`, data);
         ask("> ");
     });
@@ -167,18 +190,18 @@ function connect(token) {
                 const waveFileAudioSource = new WaveFileAudioSource(options)
                 waveFileAudioSource.on('audio', data => {
                     // console.log(`on audio`, data);
-                    ws.emit('asrAudio', data);
+                    socket.emit('asrAudio', data);
                 })
                 waveFileAudioSource.on('done', () => {
                     console.log(`asrAudio done`);
-                    ws.emit('asrAudioEnd');
+                    socket.emit('asrAudioEnd');
                 })
-                ws.emit('asrAudioStart');
+                socket.emit('asrAudioStart');
                 waveFileAudioSource.start();
             } else {
                 const messageData = input;
                 // ws.send(messageData);
-                ws.emit('message', messageData)
+                socket.emit('message', messageData)
             }
         });
     }

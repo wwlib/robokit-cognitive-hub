@@ -19,13 +19,13 @@ export class JwtAuth {
     static REFRESH_TOKEN_EXPIRES_IN: string = '1d'
 
     // a mock signIn method using ACCESS_PRIVATE_KEY_MOCK to sign tokens
-    static signIn = (username: string, password: string): Promise<AuthResult> => {
+    static signIn = (accountId: string, password: string): Promise<AuthResult> => {
         return new Promise<any>((resolve, reject) => {
-            const accessTokenPayload = JwtAuth.getAccessTokenPayload(username)
+            const accessTokenPayload = JwtAuth.getAccessTokenPayload(accountId)
             const refreshTokenPayload = {
                 accountId: 'TBD',
             }
-            refreshTokenPayload.accountId = username
+            refreshTokenPayload.accountId = accountId
             jwt.sign(accessTokenPayload, JwtAuth.ACCESS_PRIVATE_KEY_MOCK, { algorithm: 'HS256', expiresIn: JwtAuth.ACCESS_TOKEN_EXPIRES_IN }, function (err: any, accessToken: string) {
                 if (err) {
                     reject(err)

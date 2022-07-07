@@ -1,8 +1,8 @@
-import ConnectionManager from "src/db/ConnectionManager";
-import Connection, { ConnectionType } from "src/db/Connection";
+import ConnectionManager from "src/connection/ConnectionManager";
+import Connection, { ConnectionType } from "src/connection/Connection";
 
 export class Model {
-    private static instance: Model;
+    private static _instance: Model;
 
     private _requestsCount: number = 0
 
@@ -14,10 +14,10 @@ export class Model {
     }
 
     public static getInstance(): Model {
-        if (!Model.instance) {
-            Model.instance = new Model()
+        if (!Model._instance) {
+            Model._instance = new Model()
         }
-        return Model.instance
+        return Model._instance
     }
 
     onRequest() {
@@ -26,11 +26,5 @@ export class Model {
 
     resetRequestCount() {
         this._requestsCount = 0
-    }
-
-    //// connections
-
-    getDeviceConnections(): Connection[] | undefined {
-        return ConnectionManager.getInstance().getConnectionsAsArray(ConnectionType.DEVICE)
     }
 }

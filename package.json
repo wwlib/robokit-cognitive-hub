@@ -29,6 +29,7 @@
     "http-status-codes": "^2.1.4",
     "jsonwebtoken": "^8.5.1",
     "pino-pretty": "^7.1.0",
+    "robokit-command-system": "github:wwlib/robokit-command-system#v0.0.1",
     "socket.io": "^4.5.1",
     "wav": "^1.0.2",
     "ws": "^8.6.0"
