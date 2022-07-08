@@ -66,6 +66,19 @@ function connect(token) {
         reconnection: false,
     });
 
+    // synchronized clock
+
+    onSynchronizedClockUpdate = (timeData) => {
+        if (showTimeEvents) {
+            console.log(`clockUpdate: ${timeData.simpleFormat}`)
+        }
+    }
+
+    let showTimeEvents = false
+    let synchronizedClock = new rcs.SynchronizedClock();
+    synchronizedClock.on('1sec', onSynchronizedClockUpdate)
+    synchronizedClock.startUpdate()
+
     // timesync
 
     const ts = timesync.create({
@@ -78,7 +91,12 @@ function connect(token) {
     });
 
     ts.on('change', function (offset) {
-        console.log('timesync: changed offset: ' + offset + ' ms');
+        if (showTimeEvents) {
+            console.log('timesync: changed offset: ' + offset + ' ms');
+        }
+        if (synchronizedClock) {
+            synchronizedClock.onSyncOffsetChanged(offset)
+        }
         const command = {
             id: 'tbd',
             type: 'sync',
@@ -115,6 +133,10 @@ function connect(token) {
 
     socket.on('disconnect', function () {
         console.log(`on disconnect. closing...`);
+        if (synchronizedClock) {
+            synchronizedClock.dispose()
+            synchronizedClock = undefined
+        }
         process.exit(0);
     });
 
@@ -183,6 +205,9 @@ function connect(token) {
         rl.question(prompt, function (input) {
             if (input === 'quit') {
                 process.exit(0)
+            } else if (input === 'clock') {
+                showTimeEvents = !showTimeEvents
+                ask("> ")
             } else if (input === 'asr') {
                 const options = {
                     filename: 'do-you-like-mac-n-cheese.wav',

@@ -1,4 +1,4 @@
-import http, { Server as HTTPServer } from 'http'
+import { Server as HTTPServer } from 'http'
 import { Server as SocketIoServer } from 'socket.io'
 import { JwtAuth } from './auth/JwtAuth'
 import ConnectionManager from 'src/connection/ConnectionManager'
@@ -32,16 +32,14 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
                 return next(new Error('socket.io DEVICE connection: unauthorized: Invalid token.'))
             }
             return next()
-        }
-        // return next()
-        else {
+        } else {
             return next(new Error("no authorization header"))
         }
     })
 
     ioSocketServer.on('connection', function (socket) {
         console.log(`socket.io: on DEVICE connection:`, socket.id)
-        ConnectionManager.getInstance().addConnection(ConnectionType.DEVICE, socket, socket.data.accountId)
+        const connection = ConnectionManager.getInstance().addConnection(ConnectionType.DEVICE, socket, socket.data.accountId)
         socket.emit('message', { message: 'A new DEVICE has joined!' })
 
         socket.on('command', (command: RCSCommand) => {
@@ -50,7 +48,6 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
             ConnectionManager.getInstance().onConnectionEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
             if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
                 if (command.payload && typeof command.payload.syncOffset === 'number' ) {
-                    const connection = ConnectionManager.getInstance().getConnectionWithTypeAndSocketId(ConnectionType.DEVICE, socket.id)
                     if (connection) {
                         console.log(`updating syncOffset for device socket: ${socket.id}`)
                         connection.onSyncOffset(command.payload.syncOffset)
@@ -59,7 +56,6 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
             } else {
                 ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(socket.data.accountId, command)
             }
-            // socket.emit('message', { message: 'sent', command })
         })
 
         socket.on('message', (message) => {
@@ -93,8 +89,10 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         socket.on('asrAudioStart', () => {
             console.log(`on asrAudioStart`)
-            asrSessionHandler = new ASRSessionHandler(socket, asrConfig)
-            asrSessionHandler.startAudio()
+            if (connection) {
+                asrSessionHandler = new ASRSessionHandler(connection, asrConfig)
+                asrSessionHandler.startAudio()
+            }
         })
 
         socket.on('asrAudio', (data: Buffer) => {

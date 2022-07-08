@@ -66,6 +66,19 @@ function connect(token) {
         reconnection: false,
     });
 
+    // synchronized clock
+
+    onSynchronizedClockUpdate = (timeData) => {
+        if (showTimeEvents) {
+            console.log(`clockUpdate: ${timeData.simpleFormat}`)
+        }
+    }
+
+    let showTimeEvents = false
+    let synchronizedClock = new rcs.SynchronizedClock();
+    synchronizedClock.on('1sec', onSynchronizedClockUpdate)
+    synchronizedClock.startUpdate()
+
     // timesync
 
     const ts = timesync.create({
@@ -78,7 +91,12 @@ function connect(token) {
     });
 
     ts.on('change', function (offset) {
-        console.log('timesync: changed offset: ' + offset + ' ms');
+        if (showTimeEvents) {
+            console.log('timesync: changed offset: ' + offset + ' ms');
+        }
+        if (synchronizedClock) {
+            synchronizedClock.onSyncOffsetChanged(offset)
+        }
         syncOffset = offset
         const command = {
             id: 'tbd',
@@ -116,6 +134,10 @@ function connect(token) {
 
     socket.on('disconnect', function () {
         console.log(`on disconnect. closing...`);
+        if (synchronizedClock) {
+            synchronizedClock.dispose()
+            synchronizedClock = undefined
+        }
         process.exit(0);
     });
 
@@ -136,6 +158,9 @@ function connect(token) {
             const args = input.split(' ')
             if (args[0] === 'quit') {
                 process.exit(0)
+            } else if (input === 'clock') {
+                showTimeEvents = !showTimeEvents
+                ask("> ")
             } else if (args[0] === 'sub' && args[1]) {
                 const command = {
                     type: 'hubCommand',

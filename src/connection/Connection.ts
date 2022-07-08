@@ -100,6 +100,12 @@ export default class Connection {
         this._syncOffest = offset
     }
 
+    emitEvent(eventName: string, data?: any) {
+        if (this._socket) {
+            this._socket.emit(eventName, data)
+        }
+    }
+
     dispose() {
 
     }

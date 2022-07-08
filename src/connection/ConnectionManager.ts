@@ -75,10 +75,11 @@ export default class ConnectionManager {
         return result
     }
 
-    addConnection(type: ConnectionType, socket: Socket, accountId: string) {
+    addConnection(type: ConnectionType, socket: Socket, accountId: string): Connection | undefined {
+        let connection: Connection | undefined = undefined
         const connections = this.getConnectionsWithType(type)
         if (connections && socket && socket.id) {
-            const connection: Connection = new Connection(type, socket, accountId)
+            connection = new Connection(type, socket, accountId)
             connections.set(socket.id, connection)
             // update _deviceConnectionsByAccountId
             if (type === ConnectionType.DEVICE && accountId) {
@@ -87,6 +88,7 @@ export default class ConnectionManager {
         } else {
             throw new Error(`Error adding connection type: ${type}`)
         }
+        return connection
     }
 
     removeConnection(type: ConnectionType, socket: Socket) {
