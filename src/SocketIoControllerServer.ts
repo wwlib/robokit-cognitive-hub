@@ -36,12 +36,8 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
 
     ioSocketServer.on('connection', function (socket) {
         console.log(`socket.io: on CONTROLLER connection:`, socket.id)
-        ConnectionManager.getInstance().addConnection(ConnectionType.CONTROLLER, socket, socket.data.accountId)
-        socket.emit('message', { message: 'A new CONTROLLER has joined!' })
-
-        // socket.on('message', (message) => {
-
-        // })
+        const connection = ConnectionManager.getInstance().addConnection(ConnectionType.CONTROLLER, socket, socket.data.accountId)
+        socket.emit('message', { message: 'Hub message: A new CONTROLLER has joined!' })
 
         socket.on('command', (command: RCSCommand) => {
             console.log(`ControllerServer: on command:`, socket.id, command)
@@ -49,18 +45,29 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
             
             if (command.type === 'hubCommand' && command.name === 'subscribe' && command.payload && command.payload.connectionType === 'device' && command.payload.accountId) {
                 ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
-                socket.emit('message', { message: `subscribed to ${command.payload.accountId}`})
+                command = {
+                    id: 'tbd',
+                    targetAccountId: command.payload.accountId, // accountId of targeted device/app
+                    type: RCSCommandType.hubCommand,
+                    message: `subscribed to ${command.payload.accountId}`,
+                    name: RCSCommandName.notification, // added string to allow flexibility during development
+                    payload: {
+                        event: 'subscribed-to',
+                        targetAccountId: command.payload.accountId,
+                    },
+                    createdAtTime: new Date().getTime() // server time is synchronized time
+                }
+                socket.emit('command', command)
             } else if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
                 if (command.payload && typeof command.payload.syncOffset === 'number' ) {
-                    const connection = ConnectionManager.getInstance().getConnectionWithTypeAndSocketId(ConnectionType.CONTROLLER, socket.id)
                     if (connection) {
                         console.log(`updating syncOffset for controller socket: ${socket.id}`)
                         connection.onSyncOffset(command.payload.syncOffset)
                     }
                 }
             } else {
-                
-                socket.emit('message', { message: `command received: ${command.name}`})
+                const accountId = command ? command.targetAccountId : 'na'
+                socket.emit('message', { message: `Hub message: command received for ${accountId}: ${command.name}`})
 
                 // route command to device
                 if (command && command.targetAccountId) {

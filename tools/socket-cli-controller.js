@@ -20,6 +20,7 @@ dotenv.config();
 //      }'
 
 let syncOffset = 0
+let subscribedDevices = {}
 
 async function getToken() {
     if (process.env.TOKEN) {
@@ -143,6 +144,14 @@ function connect(token) {
 
     socket.on('command', function (command) {
         console.log(command);
+        if (command && command.type === 'hubCommand' && command.name === 'notification') {
+            if (command.payload && command.payload.event === 'subscribed-to') {
+                if (command.payload.targetAccountId) {
+                    subscribedDevices[command.payload.targetAccountId] = true
+                }
+                console.log('subscribedDevices:', subscribedDevices)
+            }
+        }
         ask("> ");
     });
 
@@ -158,7 +167,7 @@ function connect(token) {
             const args = input.split(' ')
             if (args[0] === 'quit') {
                 process.exit(0)
-            } else if (input === 'clock') {
+            } else if (args[0] === 'clock') {
                 showTimeEvents = !showTimeEvents
                 ask("> ")
             } else if (args[0] === 'sub' && args[1]) {
@@ -171,20 +180,59 @@ function connect(token) {
                     }
                 }
                 socket.emit('command', command)
-            } else if (args[0] === 'cmd' && args[1] && args[2] && args[3]) { // cmd play hello robot1
+            } else if (args[0] === 'cmd' && args[1] && args[2]) { // cmd play hello robot1
                 const commandType = args[1]
-                let command
+                let rcsCommand
+                let subCommand
+                let targetAccountId
                 switch (args[1]) {
                     case 'play':
-                        // command = rcs.CommandFactory.getInstance().createPlayPromptCommand(args[2], args[3])
-                        const currentTime = new Date().getTime()
-                        const startAtTime = 1000 + currentTime + syncOffset * 1000
-                        console.log(`startAtTime: currentTime: ${currentTime}, syncOffset: ${syncOffset}, startAtTime: ${startAtTime}`)
-                        command = rcs.CommandFactory.getInstance().createPlayMidiNoteCommand(48, 3, startAtTime, args[3])
+                        subCommand = args[2]
+                        console.log('play:', args[0], commandType, subCommand)
+                        if (subCommand === 'note') {
+                            const currentTime = new Date().getTime()
+                            const startAtTime = 1000 + synchronizedClock.synchronizedTime
+                            console.log(`startAtTime: currentTime: ${currentTime}, synchronizedTime: ${synchronizedClock.synchronizedTime}, startAtTime: ${startAtTime}`)
+                            const data = {
+                                type: 'command',
+                                name: 'play',
+                                payload: {
+                                    midi: {
+                                        note: 48,
+                                        channel: 2,
+                                        volume: 127,
+                                        startAtTime
+                                    }
+                                }
+                            }
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd')
+                            //rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiNoteCommand(48, 3, 127, startAtTime, 'tbd')
+                        } else if (subCommand === 'midi') {
+                            const data = {
+                                type: 'command',
+                                name: 'play',
+                                payload: {
+                                    midi: {
+                                        filename: 'twinkle_twinkle_3_chan.mid', //'twinkle_twinkle.mid',
+                                        channelsToPlay: [1],
+                                        startAtTime: 1000 + synchronizedClock.synchronizedTime
+                                    }
+                                }
+                            }
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd')
+                            // rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiFileCommand('twinkle.mid', [1], startAtTime, 'tbd')
+                        } else {
+                            // prompt
+                            rcsCommand = rcs.CommandFactory.getInstance().createPlayPromptCommand(subCommand, 'tbd')
+                        }
                         break;
                 }
-                if (command) {
-                    socket.emit('command', command)
+                if (rcsCommand) {
+                    Object.keys(subscribedDevices).forEach(accountId => {
+                        rcsCommand.targetAccountId = accountId
+                        console.log(`sending command ${rcsCommand.name} to:`, rcsCommand.targetAccountId)
+                        socket.emit('command', rcsCommand)
+                    })
                 }
             } else {
                 const messageData = {
