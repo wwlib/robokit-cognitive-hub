@@ -115,10 +115,15 @@ function connect(token) {
         return new Promise(function (resolve, reject) {
             var timeoutFn = setTimeout(reject, timeout);
 
-            socket.emit('timesync', data, function () {
+            if (socket) {
+                socket.emit('timesync', data, function () {
+                    clearTimeout(timeoutFn);
+                    resolve();
+                });
+            } else {
                 clearTimeout(timeoutFn);
-                resolve();
-            });
+                reject("ts.send: socket is undefined.");
+            }
         });
     };
 
@@ -180,7 +185,7 @@ function connect(token) {
                     }
                 }
                 socket.emit('command', command)
-            } else if (args[0] === 'cmd' && args[1] && args[2]) { // cmd play hello robot1
+            } else if (args[0] === 'cmd' && args[1]) { //} && args[2]) { // cmd play hello robot1
                 const commandType = args[1]
                 let rcsCommand
                 let subCommand
@@ -205,7 +210,7 @@ function connect(token) {
                                     }
                                 }
                             }
-                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd')
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd', new Date().getTime() + syncOffset)
                             //rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiNoteCommand(48, 3, 127, startAtTime, 'tbd')
                         } else if (subCommand === 'midi') {
                             const data = {
@@ -219,27 +224,43 @@ function connect(token) {
                                     }
                                 }
                             }
-                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd')
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd', new Date().getTime() + syncOffset)
                             // rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiFileCommand('twinkle.mid', [1], startAtTime, 'tbd')
                         } else {
                             // prompt
                             rcsCommand = rcs.CommandFactory.getInstance().createPlayPromptCommand(subCommand, 'tbd')
                         }
                         break;
+                    case 'nop':
+                        const data = {
+                            type: 'command',
+                            name: 'nop',
+                            payload: {}
+                        }
+                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd', new Date().getTime() + syncOffset)
+                        break;
                 }
                 if (rcsCommand) {
+                    const channelAssignments = {
+                        robot8: [1],
+                        robot9: [2]
+                    }
                     Object.keys(subscribedDevices).forEach(accountId => {
                         rcsCommand.targetAccountId = accountId
+                        if (rcsCommand.payload.midi) {
+                            rcsCommand.payload.midi.channelsToPlay = channelAssignments[accountId]
+                        }
                         console.log(`sending command ${rcsCommand.name} to:`, rcsCommand.targetAccountId)
                         socket.emit('command', rcsCommand)
                     })
                 }
             } else {
-                const messageData = {
-                    messsage: input,
-                }
-                // ws.send(messageData);
-                socket.emit('message', messageData)
+                // const messageData = {
+                //     messsage: input,
+                // }
+                // // ws.send(messageData);
+                // socket.emit('message', messageData)
+                ask("> ");
             }
         });
     }
