@@ -1,5 +1,7 @@
 import { RCSCommand } from 'robokit-command-system';
 import { Socket } from 'socket.io';
+import ASRSessionHandler from '../asr/ASRSessionHandler'
+import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
 
 export enum ConnectionType {
     DEVICE = 'device',
@@ -23,6 +25,8 @@ export default class Connection {
     private _accountId: string;
     private _syncOffset: number;
     private _lastSyncTimestamp: number;
+
+    // analytics
     private _commandCountFrom: number;
     private _commandCountFromQuota: number;
     private _commandCountTo: number;
@@ -31,7 +35,8 @@ export default class Connection {
     private _messageCountTo: number;
     private _audioBytesFrom: number;
     private _audioBytesFromQuota: number;
-    private _syncOffest: number;
+
+    private _asrSessionHandler: ASRSessionHandler | undefined
 
     constructor(type: ConnectionType, socket: Socket, accountId: string) {
         this._type = type
@@ -48,7 +53,7 @@ export default class Connection {
         this._messageCountTo = 0
         this._audioBytesFrom = 0
         this._audioBytesFromQuota = 0
-        this._syncOffest = 0;
+        this._syncOffset = 0;
     }
 
     get accountId(): string {
@@ -56,11 +61,11 @@ export default class Connection {
     }
 
     get syncOffest(): number {
-        return this._syncOffest
+        return this._syncOffset
     }
 
     toString(): string {
-        const syncOffset = Math.round(this._syncOffest * 1000) / 1000
+        const syncOffset = Math.round(this._syncOffset * 1000) / 1000
         return `${this._accountId}: [${this._socketId.substring(0, 6)}] syncOffset: ${syncOffset} ms, commandsFrom: ${this._commandCountFrom}. messagesFrom: ${this._messageCountFrom}, audioFrom: ${this._audioBytesFrom}`
     }
 
@@ -76,7 +81,7 @@ export default class Connection {
         }
     }
 
-    onEvent(eventType: ConnectionEventType, data: string | number) {
+    onAnalyticsEvent(eventType: ConnectionEventType, data: string | number) {
         switch (eventType) {
             case ConnectionEventType.COMMAND_FROM:
                 this._commandCountFrom += 1
@@ -97,12 +102,47 @@ export default class Connection {
     }
 
     onSyncOffset(offset: number) {
-        this._syncOffest = offset
+        this._syncOffset = offset
     }
 
     emitEvent(eventName: string, data?: any) {
         if (this._socket) {
             this._socket.emit(eventName, data)
+        }
+    }
+
+    // AsrSessionHandler
+
+    startAudio() {
+        if (this._asrSessionHandler) {
+            this._asrSessionHandler.dispose()
+        }
+        // TODO: put this somewhere better
+        const asrConfig: ASRStreamingSessionConfig = {
+            lang: 'en-US',
+            hints: undefined,
+            regexpEOS: undefined,
+            maxSpeechTimeout: 60 * 1000,
+            eosTimeout: 2000,
+            providerConfig: {
+                AzureSpeechSubscriptionKey: process.env.AZURE_SPEECH_SUBSCRIPTION_KEY || "<YOUR-AZURE-SUBSCRIPTION-KEY>",
+                AzureSpeechTokenEndpoint: process.env.AZURE_SPEECH_TOKEN_ENDPOINT || "https://azurespeechserviceeast.cognitiveservices.azure.com/sts/v1.0/issuetoken",
+                AzureSpeechRegion: process.env.AZURE_SPEECH_REGION || "eastus",
+            }
+        }
+        this._asrSessionHandler = new ASRSessionHandler(this, asrConfig)
+        this._asrSessionHandler.startAudio()
+    }
+
+    provideAudio(data: Buffer) {
+        if (this._asrSessionHandler) {
+            this._asrSessionHandler.provideAudio(data)
+        }
+    }
+
+    endAudio() {
+        if (this._asrSessionHandler) {
+            this._asrSessionHandler.endAudio()
         }
     }
 

@@ -12,7 +12,7 @@ const WavFileWriter = require('wav').FileWriter;
 
 export default class ASRSessionHandler extends EventEmitter {
 
-    private _connection: Connection
+    private _connection: Connection // TODO: Maybe use events or a callback rather than have a reference to the connection
     private _logger: Logger
     private _asrConfig: ASRStreamingSessionConfig | undefined
     private _asrStreamingSessionWrapper: ASRStreamingSessionWrapper | undefined
@@ -105,4 +105,11 @@ export default class ASRSessionHandler extends EventEmitter {
         }
     }
 
+    dispose() {
+        if (this._asrStreamingSessionWrapper) {
+            this._asrStreamingSessionWrapper.dispose()
+            this._asrStreamingSessionWrapper = undefined
+        }
+        this.endAudio()
+    }
 }

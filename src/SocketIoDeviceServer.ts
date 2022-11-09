@@ -3,8 +3,6 @@ import { Server as SocketIoServer } from 'socket.io'
 import { JwtAuth } from './auth/JwtAuth'
 import ConnectionManager from 'src/connection/ConnectionManager'
 import { ConnectionEventType, ConnectionType } from 'src/connection/Connection'
-import ASRSessionHandler from './asr/ASRSessionHandler'
-import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
 
 
@@ -44,8 +42,8 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         socket.on('command', (command: RCSCommand) => {
             console.log(`DeviceServer: on command:`, socket.id, socket.data.accountId, command)
-            ConnectionManager.getInstance().onConnectionEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM)
-            ConnectionManager.getInstance().onConnectionEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
             if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
                 if (command.payload && typeof command.payload.syncOffset === 'number' ) {
                     if (connection) {
@@ -60,8 +58,8 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         socket.on('message', (message) => {
             console.log(`on message: ${message}`, socket.id, socket.data.accountId)
-            ConnectionManager.getInstance().onConnectionEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM)
-            ConnectionManager.getInstance().onConnectionEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.MESSAGE_TO)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.MESSAGE_TO)
             ConnectionManager.getInstance().broadcastDeviceMessageToSubscriptionsWithAccountId(socket.data.accountId, { message: message })
             socket.emit('message', { message: 'sent', data: message })
         })
@@ -73,33 +71,20 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         // ASR streaming
 
-        const asrConfig: ASRStreamingSessionConfig = {
-            lang: 'en-US',
-            hints: undefined,
-            regexpEOS: undefined,
-            maxSpeechTimeout: 60 * 1000,
-            eosTimeout: 2000,
-            providerConfig: {
-                AzureSpeechSubscriptionKey: process.env.AZURE_SPEECH_SUBSCRIPTION_KEY || "<YOUR-AZURE-SUBSCRIPTION-KEY>",
-                AzureSpeechTokenEndpoint: process.env.AZURE_SPEECH_TOKEN_ENDPOINT || "https://azurespeechserviceeast.cognitiveservices.azure.com/sts/v1.0/issuetoken",
-                AzureSpeechRegion: process.env.AZURE_SPEECH_REGION || "eastus",
-            }
-        }
-        let asrSessionHandler: ASRSessionHandler
-
         socket.on('asrAudioStart', () => {
             console.log(`on asrAudioStart`)
             if (connection) {
-                asrSessionHandler = new ASRSessionHandler(connection, asrConfig)
-                asrSessionHandler.startAudio()
+                connection.startAudio()
             }
         })
 
         socket.on('asrAudio', (data: Buffer) => {
-            console.log(`on asrAudio`, data)
+            // console.log(`on asrAudio`, data)
             if (data) {
-                ConnectionManager.getInstance().onConnectionEvent(ConnectionType.DEVICE, socket, ConnectionEventType.AUDIO_BYTES_FROM, data.length)
-                asrSessionHandler.provideAudio(data)
+                ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.AUDIO_BYTES_FROM, data.length)
+                if (connection) {
+                    connection.provideAudio(data)
+                }
             } else {
                 console.log(`on asrAudio: NOT sending empty audio data.`)
             }
@@ -107,7 +92,9 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         socket.on('asrAudioEnd', () => {
             console.log(`on asrAudioEnd`)
-            asrSessionHandler.endAudio()
+            if (connection) {
+                connection.endAudio()
+            }
         })
 
         // time sync

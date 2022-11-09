@@ -103,10 +103,10 @@ export default class ConnectionManager {
         }
     }
 
-    onConnectionEvent(type: ConnectionType, socket: Socket, eventType: ConnectionEventType, data?: string | number) {
+    onAnalyticsEvent(type: ConnectionType, socket: Socket, eventType: ConnectionEventType, data?: string | number) {
         const connection = this.getConnectionWithTypeAndSocketId(type, socket.id)
         if (connection) {
-            connection.onEvent(eventType, data || '')
+            connection.onAnalyticsEvent(eventType, data || '')
         }
     }
 

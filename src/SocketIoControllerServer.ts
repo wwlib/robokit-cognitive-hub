@@ -41,7 +41,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
 
         socket.on('command', (command: RCSCommand) => {
             console.log(`ControllerServer: on command:`, socket.id, command)
-            ConnectionManager.getInstance().onConnectionEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM)
             
             if (command.type === 'hubCommand' && command.name === 'subscribe' && command.payload && command.payload.connectionType === 'device' && command.payload.accountId) {
                 ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
@@ -71,7 +71,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
 
                 // route command to device
                 if (command && command.targetAccountId) {
-                    ConnectionManager.getInstance().onConnectionEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
+                    ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
                     ConnectionManager.getInstance().sendCommandToTarget(ConnectionType.DEVICE, command, command.targetAccountId)
                 }
             }
