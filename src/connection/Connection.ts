@@ -1,7 +1,9 @@
-import { RCSCommand } from 'robokit-command-system';
 import { Socket } from 'socket.io';
+import ConnectionManager from 'src/connection/ConnectionManager';
+import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
 import ASRSessionHandler from '../asr/ASRSessionHandler'
 import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
+import SkillsController from 'src/skills/SkillsController';
 
 export enum ConnectionType {
     DEVICE = 'device',
@@ -16,6 +18,8 @@ export enum ConnectionEventType {
     MESSAGE_TO = 'message_to',
     AUDIO_BYTES_FROM = 'audio_bytes_from'
 }
+
+export type AsrSessionHandlerCallbackType = (event: string, data?: any) => void
 
 export default class Connection {
 
@@ -37,6 +41,7 @@ export default class Connection {
     private _audioBytesFromQuota: number;
 
     private _asrSessionHandler: ASRSessionHandler | undefined
+    private _skillsController: SkillsController
 
     constructor(type: ConnectionType, socket: Socket, accountId: string) {
         this._type = type
@@ -54,6 +59,26 @@ export default class Connection {
         this._audioBytesFrom = 0
         this._audioBytesFromQuota = 0
         this._syncOffset = 0;
+
+        const skillsConfig: any = {
+            skills: {
+                "clock": {
+                    "launch-criteria": {
+                        "asr": "*"
+                    },
+                    "priority": 0,
+                    "service": {
+                        "url": "http://localhost:8001",
+                        "token": "<TOKEN>"
+                    }
+                }
+            }
+        }
+        this._skillsController = new SkillsController(this, skillsConfig)
+    }
+
+    get type(): ConnectionType {
+        return this._type
     }
 
     get accountId(): string {
@@ -69,16 +94,18 @@ export default class Connection {
         return `${this._accountId}: [${this._socketId.substring(0, 6)}] syncOffset: ${syncOffset} ms, commandsFrom: ${this._commandCountFrom}. messagesFrom: ${this._messageCountFrom}, audioFrom: ${this._audioBytesFrom}`
     }
 
-    sendMessage(message: unknown) {
+    emitEvent(eventName: string, data?: any) {
         if (this._socket && this._socket.connected) {
-            this._socket.emit('message', message)
+            this._socket.emit(eventName, data)
         }
     }
 
+    sendMessage(message: unknown) {
+        this.emitEvent('message', message)
+    }
+
     sendCommand(command: RCSCommand) {
-        if (this._socket && this._socket.connected) {
-            this._socket.emit('command', command)
-        }
+        this.emitEvent('command', command)
     }
 
     onAnalyticsEvent(eventType: ConnectionEventType, data: string | number) {
@@ -105,13 +132,67 @@ export default class Connection {
         this._syncOffset = offset
     }
 
-    emitEvent(eventName: string, data?: any) {
-        if (this._socket) {
-            this._socket.emit(eventName, data)
+    // AsrSessionHandler
+
+    onAsrSOS() {
+        this.emitEvent('asrSOS')
+        const eventCommand: RCSCommand = {
+            id: 'tbd',
+            targetAccountId: this.accountId,
+            type: RCSCommandType.event,
+            name: RCSCommandName.asrSOS,
+            createdAtTime: new Date().getTime(), // NOTE: hub service time IS synchronozed time
         }
+        ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
     }
 
-    // AsrSessionHandler
+    onAsrEOS() {
+        this.emitEvent('asrEOS')
+        const eventCommand: RCSCommand = {
+            id: 'tbd',
+            targetAccountId: this.accountId,
+            type: RCSCommandType.event,
+            name: RCSCommandName.asrEOS,
+            createdAtTime: new Date().getTime(), // NOTE: hub service time IS synchronozed time
+        }
+        ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
+    }
+
+    onAsrResult(data: any) {
+        this.emitEvent('asrResult', data)
+    }
+
+    onAsrEnded(data: any) {
+        this.emitEvent('asrEnded', data)
+        const eventCommand: RCSCommand = {
+            id: 'tbd',
+            targetAccountId: this.accountId,
+            type: RCSCommandType.event,
+            name: RCSCommandName.asrEnded,
+            createdAtTime: new Date().getTime(), // NOTE: hub service time IS synchronozed time
+            payload: {
+                data
+            }
+        }
+        ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
+    }
+
+    asrSessionHandlerCallback = (event: string, data: any) => {
+        switch (event) {
+            case 'asrSOS':
+                this.onAsrSOS()
+                break;
+            case 'asrEOS':
+                this.onAsrEOS()
+                break;
+            case 'asrResult':
+                this.onAsrResult(data)
+                break;
+            case 'asrEnded':
+                this.onAsrEnded(data)
+                break;
+        }
+    }
 
     startAudio() {
         if (this._asrSessionHandler) {
@@ -130,7 +211,7 @@ export default class Connection {
                 AzureSpeechRegion: process.env.AZURE_SPEECH_REGION || "eastus",
             }
         }
-        this._asrSessionHandler = new ASRSessionHandler(this, asrConfig)
+        this._asrSessionHandler = new ASRSessionHandler(this.asrSessionHandlerCallback, asrConfig)
         this._asrSessionHandler.startAudio()
     }
 
