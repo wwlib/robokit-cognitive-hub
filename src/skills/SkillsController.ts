@@ -1,36 +1,92 @@
 import Connection from 'src/connection/Connection';
-import SkillSessionHandler from './SkillSessionHandler';
+import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler';
+import ClockSkillSessionHandler from './ClockSkillSessionHandler';
+import EchoSkillSessionHandler from './EchoSkillSessionHandler';
+import { SkillsManifest } from './SkillsManager';
+
+export type SkillsControllerCallbackType = (event: string, data?: any) => void
 
 export interface SkillsControllerConfig {
-    skills: any[]
+    skillsManifest: SkillsManifest
 }
 
 export default class SkillsController {
 
-    private _connection: Connection // TODO: Maybe use events or a callback rather than have a reference to the connection
-    private _skillSessionHandlers: Map<string, SkillSessionHandler>
+    private _callback: SkillsControllerCallbackType
+    private _skillSessionHandlers: Map<string, AbstractSkillSessionHandler>
 
-    constructor(connection: Connection, config: SkillsControllerConfig) {
-        this._connection = connection
-        this._skillSessionHandlers = new Map<string, SkillSessionHandler>()
+    constructor(callback: SkillsControllerCallbackType, config: SkillsControllerConfig) {
+        this._callback = callback
+        this._skillSessionHandlers = new Map<string, AbstractSkillSessionHandler>()
         this.init(config)
     }
 
     init(config: SkillsControllerConfig) {
-        if (config.skills) {
-            const skillsData: any[] = Object.values(config.skills)
+        if (config.skillsManifest.skills) {
+            const skillsActivated: any = {}
+            const skillsData: any[] = Object.values(config.skillsManifest.skills)
             skillsData.forEach((skillData: any) => {
                 console.log(`SkillsController: init:`, skillData)
-                const handler: SkillSessionHandler = new SkillSessionHandler(this._connection, skillData)
-
+                let handler: AbstractSkillSessionHandler | undefined = undefined
+                if (skillData.id === 'echo') {
+                    handler = new EchoSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
+                } else if (skillData.id === 'clock') {
+                    handler = new ClockSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
+                }
+                if (handler) {
+                    this._skillSessionHandlers.set(skillData.id, handler)
+                    skillsActivated[skillData.id] = {
+                        id: skillData.id,
+                        priority: skillData.priority
+                    }
+                }
             })
+            this._callback('init', skillsActivated)
         }
     }
 
     broadcastEventToSkills(event: any) {
         for (var [key, value] of this._skillSessionHandlers.entries()) {
-            console.log(`sending event to: ${key}`, value)
+            // console.log(`broadcastEventToSkills: ${key}`, value, event)
+            const skillSessionHandler: AbstractSkillSessionHandler = value
+            skillSessionHandler.onEvent(event)
         }
     }
 
+    onAsrSOS() {
+        this.broadcastEventToSkills({
+            event: 'asrSOS'
+        })
+    }
+
+    onAsrEOS() {
+        this.broadcastEventToSkills({
+            event: 'asrEOS'
+        })
+    }
+
+    onAsrResult(data: any) {
+        this.broadcastEventToSkills({
+            event: 'asrResult',
+            data
+        })
+    }
+
+    onAsrEnded(data: any) {
+        this.broadcastEventToSkills({
+            event: 'asrEnded',
+            data
+        })
+    }
+
+    // SkillSessionHandler callback
+
+    skillSessionHandlerCallback: SkillSessionHandlerCallbackType = (event: string, data: any) => {
+        switch (event) {
+            case 'reply':
+                // console.log(`skillSessionHandlerCallback: reply:`, data)
+                this._callback('reply', data)
+                break;
+        }
+    }
 }

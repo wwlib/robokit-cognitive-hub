@@ -41,13 +41,15 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
         socket.emit('message', { message: 'A new DEVICE has joined!' })
 
         socket.on('command', (command: RCSCommand) => {
-            console.log(`DeviceServer: on command:`, socket.id, socket.data.accountId, command)
+            if (command.type !== 'sync') {
+                console.log(`DeviceServer: on command:`, socket.id, socket.data.accountId, command)
+            }
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM)
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
             if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
                 if (command.payload && typeof command.payload.syncOffset === 'number' ) {
                     if (connection) {
-                        console.log(`updating syncOffset for device socket: ${socket.id}`)
+                        // console.log(`updating syncOffset for device socket: ${socket.id}`)
                         connection.onSyncOffset(command.payload.syncOffset)
                     }
                 }

@@ -1,9 +1,10 @@
 import { Socket } from 'socket.io';
 import ConnectionManager from 'src/connection/ConnectionManager';
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
-import ASRSessionHandler from '../asr/ASRSessionHandler'
+import ASRSessionHandler, { AsrSessionHandlerCallbackType } from '../asr/ASRSessionHandler'
 import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
-import SkillsController from 'src/skills/SkillsController';
+import SkillsController, { SkillsControllerCallbackType } from 'src/skills/SkillsController';
+import SkillsManager, { SkillsManifest } from 'src/skills/SkillsManager';
 
 export enum ConnectionType {
     DEVICE = 'device',
@@ -19,7 +20,6 @@ export enum ConnectionEventType {
     AUDIO_BYTES_FROM = 'audio_bytes_from'
 }
 
-export type AsrSessionHandlerCallbackType = (event: string, data?: any) => void
 
 export default class Connection {
 
@@ -41,7 +41,7 @@ export default class Connection {
     private _audioBytesFromQuota: number;
 
     private _asrSessionHandler: ASRSessionHandler | undefined
-    private _skillsController: SkillsController
+    private _skillsController: SkillsController | undefined
 
     constructor(type: ConnectionType, socket: Socket, accountId: string) {
         this._type = type
@@ -59,22 +59,14 @@ export default class Connection {
         this._audioBytesFrom = 0
         this._audioBytesFromQuota = 0
         this._syncOffset = 0;
+        this.init()
+    }
 
-        const skillsConfig: any = {
-            skills: {
-                "clock": {
-                    "launch-criteria": {
-                        "asr": "*"
-                    },
-                    "priority": 0,
-                    "service": {
-                        "url": "http://localhost:8001",
-                        "token": "<TOKEN>"
-                    }
-                }
-            }
-        }
-        this._skillsController = new SkillsController(this, skillsConfig)
+    init() {
+        SkillsManager.getInstance().getSkillsManifest()
+            .then((skillsManifest: SkillsManifest) => {
+                this._skillsController = new SkillsController(this.skillsControllerCallback, { skillsManifest })
+            })
     }
 
     get type(): ConnectionType {
@@ -177,20 +169,27 @@ export default class Connection {
         ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
     }
 
-    asrSessionHandlerCallback = (event: string, data: any) => {
-        switch (event) {
-            case 'asrSOS':
-                this.onAsrSOS()
-                break;
-            case 'asrEOS':
-                this.onAsrEOS()
-                break;
-            case 'asrResult':
-                this.onAsrResult(data)
-                break;
-            case 'asrEnded':
-                this.onAsrEnded(data)
-                break;
+    asrSessionHandlerCallback: AsrSessionHandlerCallbackType = (event: string, data: any) => {
+        console.log(`asrSessionHandlerCallback`, event)
+        if (this._skillsController) {
+            switch (event) {
+                case 'asrSOS':
+                    this.onAsrSOS()
+                    this._skillsController.onAsrSOS()
+                    break;
+                case 'asrEOS':
+                    this.onAsrEOS()
+                    this._skillsController.onAsrEOS()
+                    break;
+                case 'asrResult':
+                    this.onAsrResult(data)
+                    this._skillsController.onAsrResult(data)
+                    break;
+                case 'asrEnded':
+                    this.onAsrEnded(data)
+                    this._skillsController.onAsrEnded(data)
+                    break;
+            }
         }
     }
 
@@ -226,6 +225,27 @@ export default class Connection {
             this._asrSessionHandler.endAudio()
         }
     }
+
+    // SkillsController
+
+    skillsControllerCallback: SkillsControllerCallbackType = (event: string, data: any) => {
+        switch (event) {
+            case 'init':
+                this.sendMessage({
+                    type: 'SkillsController',
+                    event: 'init',
+                    data: data,
+                })
+                break;
+            case 'reply': // TODO: OK for now, but should send a command rather than a message
+                this.sendMessage({
+                    type: 'SkillsController',
+                    event: 'reply',
+                    data: data,
+                })
+        }
+    }
+
 
     dispose() {
 

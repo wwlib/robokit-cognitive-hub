@@ -4,9 +4,10 @@ import {
     ASRStreamingSessionWrapper,
     Logger
 } from 'cognitiveserviceslib'
-import { AsrSessionHandlerCallbackType } from 'src/connection/Connection';
 
 const WavFileWriter = require('wav').FileWriter;
+
+export type AsrSessionHandlerCallbackType = (event: string, data?: any) => void
 
 export default class ASRSessionHandler extends EventEmitter {
 
