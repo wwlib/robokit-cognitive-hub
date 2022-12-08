@@ -38,14 +38,14 @@ For details about the project structure, see: [A Nodejs Microservice Template](h
 
 Copy `.env-example` to `.env`
 ```
-SERVER_PORT=8000
+SERVER_PORT=8082
 USE_AUTH=true
 AZURE_SPEECH_SUBSCRIPTION_KEY=<YOUR-SUBSCRIPTION-KEY>
 AZURE_SPEECH_TOKEN_ENDPOINT=https://azurespeechserviceeast.cognitiveservices.azure.com/sts/v1.0/issuetoken
 AZURE_SPEECH_REGION=eastus
 ```
 
-`docker run -it --rm -p 8000:8000 --env-file ./.env robokit-cognitive-hub` 
+`docker run -it --rm -p 8082:8082 --env-file ./.env robokit-cognitive-hub` 
 - or `npm run docker:run`
 
 
@@ -54,7 +54,7 @@ AZURE_SPEECH_REGION=eastus
 Example auth request:
 
 ```sh
-curl --location --request POST 'http://localhost:8000/auth' \
+curl --location --request POST 'http://localhost:8082/auth' \
      --header 'Content-Type: application/json' \
      --data-raw '{
        "accountId": "robot1",
@@ -68,7 +68,7 @@ curl --location --request POST 'http://localhost:8000/auth' \
 
 ### http - dashboard
 
-http://localhost:8000/
+http://localhost:8082/
 
 
 ### cli socket client (REPL)

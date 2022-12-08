@@ -42,7 +42,7 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
     ioSocketServer.on('connection', function (socket) {
         console.log(`socket.io: on DEVICE connection:`, socket.id)
         const connection = ConnectionManager.getInstance().addConnection(ConnectionType.DEVICE, socket, socket.data.accountId)
-        socket.emit('message', { message: 'A new DEVICE has joined!' })
+        socket.emit('message', { source: 'RCH', event: 'handshake', message: 'DEVICE connection accepted' })
 
         socket.on('command', (command: RCSCommand) => {
             if (command.type !== 'sync') {
@@ -67,7 +67,7 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM)
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.MESSAGE_TO)
             ConnectionManager.getInstance().broadcastDeviceMessageToSubscriptionsWithAccountId(socket.data.accountId, { message: message })
-            socket.emit('message', { message: 'sent', data: message })
+            socket.emit('message', { source: 'RCH', event: 'ack', data: message })
         })
 
         socket.once('disconnect', function (reason) {

@@ -13,7 +13,7 @@ const { WaveFileAudioSource } = require('cognitiveserviceslib')
 dotenv.config();
 
 /*
-curl --location --request POST 'http://localhost:8000/auth' \
+curl --location --request POST 'http://localhost:8082/auth' \
      --header 'Content-Type: application/json' \
      --data-raw '{
        "accountId": "robot1",
@@ -38,7 +38,7 @@ async function getToken() {
                     resolve(response.data.access_token);
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    console.log('CLI: on getToken error:', error);
                     reject();
                 });
 
@@ -55,8 +55,8 @@ function connect(token) {
         output: process.stdout
     });
 
-    console.log(`URL:`, process.env.URL);
-    console.log('token:', token);
+    console.log(`CLI: URL:`, process.env.URL);
+    console.log('CLI: token:', token);
     // const ws = new WebSocket(process.env.URL, { headers: { Authorization: `Bearer ${token}` } })
     const socket = io(process.env.URL, {
         path: process.env.DEVICE_SOCKET_PATH,
@@ -70,7 +70,7 @@ function connect(token) {
 
     onSynchronizedClockUpdate = (timeData) => {
         if (showTimeEvents) {
-            console.log(`clockUpdate: ${timeData.simpleFormat}`)
+            console.log(`CLI: clockUpdate: ${timeData.simpleFormat}`)
         }
     }
 
@@ -92,7 +92,7 @@ function connect(token) {
 
     ts.on('change', function (offset) {
         if (showTimeEvents) {
-            console.log('timesync: changed offset: ' + offset + ' ms');
+            console.log('CLI: timesync: changed offset: ' + offset + ' ms');
         }
         if (synchronizedClock) {
             synchronizedClock.onSyncOffsetChanged(offset)
@@ -128,11 +128,11 @@ function connect(token) {
     // socket messages
 
     socket.on("connect", () => {
-        console.log(socket.id); // "G5p5..."
+        console.log('CLI: on connect: socket id:', socket.id); // "G5p5..."
     });
 
     socket.on('disconnect', function () {
-        console.log(`on disconnect. closing...`);
+        console.log(`CLI: on disconnect. closing...`);
         if (synchronizedClock) {
             synchronizedClock.dispose()
             synchronizedClock = undefined
@@ -146,28 +146,26 @@ function connect(token) {
     })
 
     socket.on('command', function (command) {
-        console.log('command', command);
+        console.log('CLI: on command', command);
         rcs.CommandProcessor.getInstance().processCommand(command)
         ask("> ");
     });
 
     socket.on('message', function (data) {
-        console.log(data.message);
+        console.log('CLI: on message:', data);
         ask("> ");
     });
 
-    socket.emit('message', 'CONNECTED');
-
     socket.on('asrSOS', function () {
-        console.log(`asrSOS`);
+        console.log(`CLI: on asrSOS`);
     });
 
     socket.on('asrResult', function (data) {
-        console.log(`asrResult`, data);
+        console.log(`CLI: on asrResult`, data);
     });
 
     socket.on('asrEnded', function (data) {
-        console.log(`asrEnded`, data);
+        console.log(`CLI: on asrEnded`, data);
         ask("> ");
     });
 
@@ -218,13 +216,17 @@ function connect(token) {
                     socket.emit('asrAudio', data);
                 })
                 waveFileAudioSource.on('done', () => {
-                    console.log(`asrAudio done`);
+                    console.log(`CLI: on asrAudio done`);
                     socket.emit('asrAudioEnd');
                 })
                 socket.emit('asrAudioStart');
                 waveFileAudioSource.start();
             } else {
-                const messageData = input;
+                const messageData = {
+                    source: 'CLI',
+                    event: 'user-input',
+                    data: { input: input }
+                }
                 // ws.send(messageData);
                 socket.emit('message', messageData)
             }

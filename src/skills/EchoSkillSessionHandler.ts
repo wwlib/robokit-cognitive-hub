@@ -10,10 +10,11 @@ export default class EchoSkillSessionHandler extends AbstractSkillSessionHandler
         switch (event.event) {
             case 'asrEnded':
                 this._callback('reply', {
+                    source: 'RCH:EchoSkillSessionHandler',
                     event: 'reply',
                     skillId: this._skillId,
                     skillPriority: this._skillPriority,
-                    text: `you said, ${event.data.text}`
+                    data: { reply: `you said, ${event.data.text}` }
                 })
                 break;
         }

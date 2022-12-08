@@ -16,10 +16,11 @@ export default class ClockSkillSessionHandler extends AbstractSkillSessionHandle
             if (asrText.toLowerCase().indexOf('what time is it') >= 0) {
 
                 reply = {
+                    source: 'RCH:ClockSkillSessionHandler',
                     event: 'reply',
                     skillId: this._skillId,
                     skillPriority: this._skillPriority,
-                    text: `the time is ${timeText}`
+                    data: { reply: `the time is ${timeText}` }
                 }
             }
         }

@@ -12,7 +12,7 @@ const { WaveFileAudioSource } = require('cognitiveserviceslib')
 
 dotenv.config();
 
-// curl --location --request POST 'https://localhost:8000/auth' \
+// curl --location --request POST 'https://localhost:8082/auth' \
 //     --header 'Content-Type: application/json' \
 //     --data-raw '{
 //        "accountId": "user1",
@@ -172,8 +172,6 @@ function connect(token) {
         console.log(data);
         ask("> ");
     });
-
-    socket.emit('message', 'CONNECTED');
 
     const ask = (prompt) => {
         rl.question(prompt, function (input) {

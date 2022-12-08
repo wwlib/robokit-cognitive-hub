@@ -41,7 +41,7 @@ export default class SkillsManager {
 
     // TODO: read manifest from a file, i.e. skills-manifest.json
     async getSkillsManifest(): Promise<SkillsManifest> {
-        return {
+        const data = {
             skills: {
                 "clock": {
                     "id": "clock",
@@ -64,13 +64,21 @@ export default class SkillsManager {
                     },
                     "priority": 1,
                     "serviceData": {
-                        "url": "http://localhost:8001",
-                        "authUrl": "http://localhost:8001/auth",
+                        "url": "http://localhost:8083",
+                        "authUrl": "http://localhost:8083/auth",
                         "accountId": "robot1",
-                        "password": "opensesame",
+                        "password": "opensesame"
                     }
                 }
             }
         }
+        if (process.env.CHITCHAT_URL) {
+            data.skills.chitchat.serviceData.url = process.env.CHITCHAT_URL
+        }
+        if (process.env.CHITCHAT_AUTH_URL) {
+            data.skills.chitchat.serviceData.authUrl = process.env.CHITCHAT_AUTH_URL
+        }
+        console.log(data)
+        return data
     }
 }

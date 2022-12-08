@@ -53,7 +53,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
                     resolve(response.data.access_token);
                 })
                 .catch(function (error: any) {
-                    console.log(error);
+                    console.log('CloudSkilllSessionHandler: getToken error:',error);
                     reject();
                 });
 
@@ -62,8 +62,8 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
 
     connect(url: string, token: string) {
 
-        console.log(`URL:`, url);
-        console.log('token:', token);
+        console.log('CloudSkilllSessionHandler: connect URL:', url);
+        console.log('CloudSkilllSessionHandler: connect token:', token);
         const socketPath: string = '/socket-hub/'
         this._socket = io(url, {
             path: socketPath,
@@ -77,7 +77,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
 
         const onSynchronizedClockUpdate = (timeData: any) => {
             if (showTimeEvents) {
-                console.log(`clockUpdate: ${timeData.simpleFormat}`)
+                console.log(`CloudSkilllSessionHandler: clockUpdate: ${timeData.simpleFormat}`)
             }
         }
 
@@ -99,7 +99,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
 
         ts.on('change', (offset: number) => {
             if (showTimeEvents) {
-                console.log('timesync: changed offset: ' + offset + ' ms');
+                console.log('CloudSkilllSessionHandler: timesync: changed offset: ' + offset + ' ms');
             }
             if (synchronizedClock) {
                 synchronizedClock.onSyncOffsetChanged(offset)
@@ -135,11 +135,11 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
         // socket messages
 
         this._socket.on("connect", () => {
-            console.log(this._socket.id); // "G5p5..."
+            console.log('CloudSkillSessionHandler: on connect', this._socket.id); // "G5p5..."
         });
 
         this._socket.on('disconnect', function () {
-            console.log(`CloudSkillSessionHandler: on disconnect. halting clock synct ...`);
+            console.log('CloudSkillSessionHandler: on disconnect. halting clock sync ...');
             if (synchronizedClock) {
                 synchronizedClock.dispose()
                 synchronizedClock = undefined
@@ -147,23 +147,25 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
         });
 
         this._socket.on('command', (command: any) => {
-            console.log('command', command);
+            console.log('CloudSkilllSessionHandler: on command:', command);
         });
 
-        this._socket.on('message', (data: any) => {
-            console.log(data.message, data.data);
-            this._callback('reply', `${data.message}: ${data.data}`)
+        this._socket.on('message', (messageData: any) => {
+            console.log('CloudSkilllSessionHandler: on message:', messageData);
+            this._callback('reply', {
+                source: `CS:${this._skillId}`,
+                event: 'reply',
+                skillId: this._skillId,
+                skillPriority: this._skillPriority,
+                data: messageData.data
+            })
         });
-
-        this._socket.emit('message', 'CONNECTED');
-
     }
 
     onEvent(event: any) {
-        let reply: any
         switch (event.event) {
             case 'asrEnded':
-                this._socket.emit('message', event.data.text)
+                this._socket.emit('message', event.data)
                 break;
         }
     }

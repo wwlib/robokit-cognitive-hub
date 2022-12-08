@@ -249,17 +249,13 @@ export default class Connection {
         switch (event) {
             case 'init':
                 this.sendMessage({
-                    type: 'SkillsController',
-                    event: 'init',
+                    source: 'RCH:Connection',
+                    event: 'skillsControllerInit',
                     data: data,
                 })
                 break;
             case 'reply': // TODO: OK for now, but should send a command rather than a message
-                this.sendMessage({
-                    type: 'SkillsController',
-                    event: 'reply',
-                    data: data,
-                })
+                this.sendMessage(data)
         }
     }
 

@@ -21,8 +21,10 @@
             },
             "priority": 1,
             "serviceData": {
-                "url": "http://localhost:8001",
-                "token": "<TOKEN>"
+                "url": "http://localhost:8083",
+                "authUrl": "http://localhost:8083/auth",
+                "accountId": "robot1",
+                "password": "opensesame"
             }
         }
     }

@@ -16,7 +16,7 @@
     "test:ci": "echo TODO",
     "clean": "rm -rf dist node_modules",
     "docker:build": "docker build -t robokit-cognitive-hub .",
-    "docker:run": "docker run -it --rm -p 8000:8000 --env-file ./.env robokit-cognitive-hub"
+    "docker:run": "docker run -it --rm -p 8082:8082 --env-file ./.env robokit-cognitive-hub"
   },
   "dependencies": {
     "cognitiveserviceslib": "github:wwlib/cognitiveserviceslib#feature/andrew/asr-tweaks",
