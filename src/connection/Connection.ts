@@ -226,6 +226,23 @@ export default class Connection {
         }
     }
 
+    // Photo
+
+    onBase64Photo(base64PhotoData: string) {
+        // console.log(`Connection: ${this._accountId}:${this._socketId}`, base64PhotoData)
+        if (base64PhotoData) {
+            const eventCommand: RCSCommand = {
+                id: 'tbd',
+                targetAccountId: this.accountId,
+                type: RCSCommandType.event,
+                name: 'base64Photo', // TODO: ass RCSCommandName.base64Photo,
+                payload: base64PhotoData,
+                createdAtTime: new Date().getTime(), // NOTE: hub service time IS synchronozed time
+            }
+            ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
+        }
+    }
+
     // SkillsController
 
     skillsControllerCallback: SkillsControllerCallbackType = (event: string, data: any) => {

@@ -5,7 +5,9 @@ export interface SkillLaunchCriteria {
 
 export interface SkillServiceData {
     url: string
-    token: string
+    authUrl: string
+    accountId: string
+    password: string
 }
 
 export interface SkillData {
@@ -63,7 +65,9 @@ export default class SkillsManager {
                     "priority": 1,
                     "serviceData": {
                         "url": "http://localhost:8001",
-                        "token": "<TOKEN>"
+                        "authUrl": "http://localhost:8001/auth",
+                        "accountId": "robot1",
+                        "password": "opensesame",
                     }
                 }
             }

@@ -10,6 +10,7 @@ import { setupSocketIoDeviceServer } from './SocketIoDeviceServer'
 import { setupSocketIoControllerServer } from './SocketIoControllerServer'
 
 const cookieParser = require("cookie-parser");
+const cors = require('cors');
 
 dotenv.config()
 
@@ -21,6 +22,14 @@ const main = async () => {
   app.use(express.text())
   app.use(express.static('public'));
   app.use(cookieParser());
+
+  // https://www.section.io/engineering-education/how-to-use-cors-in-nodejs-with-express/
+  // https://expressjs.com/en/resources/middleware/cors.html
+  app.use(cors({
+    origin: process.env.CORS_ORIGIN, // 'http://localhost:3000',
+    credentials: true,
+  }));
+  console.log(`Allowing CORS origin: ${process.env.CORS_ORIGIN}`)
 
   // HealthCheck
   app.get('/healthcheck', handlers.HealthCheckHandler)

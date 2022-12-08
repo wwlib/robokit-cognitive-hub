@@ -148,13 +148,21 @@ function connect(token) {
     });
 
     socket.on('command', function (command) {
-        console.log(command);
-        if (command && command.type === 'hubCommand' && command.name === 'notification') {
-            if (command.payload && command.payload.event === 'subscribed-to') {
-                if (command.payload.targetAccountId) {
-                    subscribedDevices[command.payload.targetAccountId] = true
+        
+        if (command && command.name === 'base64Photo') {
+            if (typeof command.payload === 'string') {
+                command.payload = command.payload.slice(-20)
+            }
+            console.log(command);
+        } else {
+            console.log(command);
+            if (command && command.type === 'hubCommand' && command.name === 'notification') {
+                if (command.payload && command.payload.event === 'subscribed-to') {
+                    if (command.payload.targetAccountId) {
+                        subscribedDevices[command.payload.targetAccountId] = true
+                    }
+                    console.log('subscribedDevices:', subscribedDevices)
                 }
-                console.log('subscribedDevices:', subscribedDevices)
             }
         }
         ask("> ");
@@ -190,6 +198,7 @@ function connect(token) {
                 let rcsCommand
                 let subCommand
                 let targetAccountId
+                let commandData
                 switch (args[1]) {
                     case 'play':
                         subCommand = args[2]
@@ -198,7 +207,7 @@ function connect(token) {
                             const currentTime = new Date().getTime()
                             const startAtTime = 1000 + synchronizedClock.synchronizedTime
                             console.log(`startAtTime: currentTime: ${currentTime}, synchronizedTime: ${synchronizedClock.synchronizedTime}, startAtTime: ${startAtTime}`)
-                            const data = {
+                            commandData = {
                                 type: 'command',
                                 name: 'play',
                                 payload: {
@@ -210,10 +219,10 @@ function connect(token) {
                                     }
                                 }
                             }
-                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd', new Date().getTime() + syncOffset)
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
                             //rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiNoteCommand(48, 3, 127, startAtTime, 'tbd')
                         } else if (subCommand === 'midi') {
-                            const data = {
+                            commandData = {
                                 type: 'command',
                                 name: 'play',
                                 payload: {
@@ -224,26 +233,36 @@ function connect(token) {
                                     }
                                 }
                             }
-                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd', new Date().getTime() + syncOffset)
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
                             // rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiFileCommand('twinkle.mid', [1], startAtTime, 'tbd')
                         } else {
                             // prompt
                             rcsCommand = rcs.CommandFactory.getInstance().createPlayPromptCommand(subCommand, 'tbd')
                         }
                         break;
+                    case 'getBase64Photo':
+                        commandData = {
+                            type: 'command',
+                            name: 'getBase64Photo',
+                            payload: {}
+                        }
+                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
+                        break;
                     case 'nop':
-                        const data = {
+                        commandData = {
                             type: 'command',
                             name: 'nop',
                             payload: {}
                         }
-                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(data, 'tbd', new Date().getTime() + syncOffset)
+                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
                         break;
                 }
                 if (rcsCommand) {
                     const channelAssignments = {
+                        robot7: [4],
                         robot8: [1],
-                        robot9: [2]
+                        robot9: [2],
+                        robot6: [4]
                     }
                     Object.keys(subscribedDevices).forEach(accountId => {
                         rcsCommand.targetAccountId = accountId

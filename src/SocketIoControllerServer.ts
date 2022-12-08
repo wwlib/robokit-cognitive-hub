@@ -8,6 +8,10 @@ import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-syst
 export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: string): SocketIoServer => {
     const ioSocketServer = new SocketIoServer(httpServer, {
         path: path,
+        cors: {
+            origin: process.env.CORS_ORIGIN, // 'http://localhost:3000',
+            methods: ["GET", "POST"]
+        }
     })
 
     ioSocketServer.use(function (socket, next) {
@@ -42,7 +46,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
         socket.on('command', (command: RCSCommand) => {
             console.log(`ControllerServer: on command:`, socket.id, command)
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM)
-            
+
             if (command.type === 'hubCommand' && command.name === 'subscribe' && command.payload && command.payload.connectionType === 'device' && command.payload.accountId) {
                 ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
                 command = {
@@ -59,7 +63,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
                 }
                 socket.emit('command', command)
             } else if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
-                if (command.payload && typeof command.payload.syncOffset === 'number' ) {
+                if (command.payload && typeof command.payload.syncOffset === 'number') {
                     if (connection) {
                         console.log(`updating syncOffset for controller socket: ${socket.id}`)
                         connection.onSyncOffset(command.payload.syncOffset)
@@ -67,7 +71,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
                 }
             } else {
                 const accountId = command ? command.targetAccountId : 'na'
-                socket.emit('message', { message: `Hub message: command received for ${accountId}: ${command.name}`})
+                socket.emit('message', { message: `Hub message: command received for ${accountId}: ${command.name}` })
 
                 // route command to device
                 if (command && command.targetAccountId) {

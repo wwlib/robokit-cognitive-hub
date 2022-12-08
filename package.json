@@ -30,8 +30,11 @@
     "http-status-codes": "^2.1.4",
     "jsonwebtoken": "^8.5.1",
     "pino-pretty": "^7.1.0",
+    "promise": "^8.3.0",
     "robokit-command-system": "github:wwlib/robokit-command-system#bugfix/andrew/clock-tweaks",
     "socket.io": "^4.5.1",
+    "socket.io-client": "^4.5.3",
+    "timesync": "^1.0.11",
     "wav": "^1.0.2",
     "ws": "^8.6.0"
   },

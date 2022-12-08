@@ -1,6 +1,7 @@
 import Connection from 'src/connection/Connection';
 import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler';
 import ClockSkillSessionHandler from './ClockSkillSessionHandler';
+import CloudSkillSessionHandler from './CloudSkillSessionHandler';
 import EchoSkillSessionHandler from './EchoSkillSessionHandler';
 import { SkillsManifest } from './SkillsManager';
 
@@ -32,6 +33,8 @@ export default class SkillsController {
                     handler = new EchoSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
                 } else if (skillData.id === 'clock') {
                     handler = new ClockSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
+                } else {
+                    handler = new CloudSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
                 }
                 if (handler) {
                     this._skillSessionHandlers.set(skillData.id, handler)

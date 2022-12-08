@@ -9,6 +9,10 @@ import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-syst
 export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string): SocketIoServer => {
     const ioSocketServer = new SocketIoServer(httpServer, {
         path: path,
+        cors: {
+            origin: process.env.CORS_ORIGIN, // 'http://localhost:3000',
+            methods: ["GET", "POST"]
+        }
     })
 
     ioSocketServer.use(function (socket, next) {
@@ -96,6 +100,15 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
             console.log(`on asrAudioEnd`)
             if (connection) {
                 connection.endAudio()
+            }
+        })
+
+        // photo
+
+        socket.on('base64Photo', (base64PhotoData: string) => {
+            console.log(`on base64Photo:`, base64PhotoData)
+            if (connection) {
+                connection.onBase64Photo(base64PhotoData)
             }
         })
 
