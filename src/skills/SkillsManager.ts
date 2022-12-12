@@ -78,7 +78,7 @@ export default class SkillsManager {
         if (process.env.CHITCHAT_AUTH_URL) {
             data.skills.chitchat.serviceData.authUrl = process.env.CHITCHAT_AUTH_URL
         }
-        console.log(data)
+        // console.log(data)
         return data
     }
 }

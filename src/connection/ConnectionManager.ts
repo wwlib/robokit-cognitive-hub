@@ -123,7 +123,7 @@ export default class ConnectionManager {
                     })
                 const subscriptions = this._deviceSubscriptions.get(accountId) || []
                 this._deviceSubscriptions.set(accountId, [...subscriptions, newSubscription])
-                console.log(`subscribeToConnection: ${type}, ${accountId}`)
+                console.log(`ConnectionManager: subscribeToConnection: ${type}, ${accountId}`)
             }
         }
     }
@@ -136,7 +136,7 @@ export default class ConnectionManager {
                 let filteredSubscriptions: Subscription[] = []
                 subscriptions.forEach((subscription: Subscription) => {
                     if (subscription.accountId === accountId) {
-                        console.log(`unsubscribeFromConnection ${type}, ${accountId}`)
+                        console.log(`ConnectionManager: unsubscribeFromConnection ${type}, ${accountId}`)
                         subscription.dispose()
                     } else {
                         filteredSubscriptions.push(subscription)
@@ -151,7 +151,7 @@ export default class ConnectionManager {
         const subscriptions: Subscription[] | undefined = this._deviceSubscriptions.get(accountId)
         if (subscriptions) {
             subscriptions.forEach((subscription: Subscription) => {
-                console.log(`broadcasting command to subscribers to: ${subscription.accountId}:`, subscription)
+                // console.log(`broadcasting command to subscribers to: ${subscription.accountId}:`, subscription)
                 subscription.onCommand(command)
             })
         }
@@ -161,7 +161,7 @@ export default class ConnectionManager {
         const subscriptions: Subscription[] | undefined = this._deviceSubscriptions.get(accountId)
         if (subscriptions) {
             subscriptions.forEach((subscription: Subscription) => {
-                console.log(`broadcasting message to subscribers to: ${subscription.accountId}:`, subscription)
+                // console.log(`broadcasting message to subscribers to: ${subscription.accountId}:`, subscription)
                 subscription.onMessage(message)
             })
         }

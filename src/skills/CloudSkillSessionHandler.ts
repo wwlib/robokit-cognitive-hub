@@ -26,11 +26,11 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
                         try {
                             this.connect(url, token) // TODO: error handling
                         } catch(error) {
-                            console.log(`CloudSkillSessionHandler: error connecting to skill socket.`, error)
+                            console.error(`CloudSkillSessionHandler: error connecting to skill socket.`, error)
                         }
                     })
                     .catch((error: any) => {
-                        console.log(`CloudSkillSessionHandler: error getting token:`, error)
+                        console.error(`CloudSkillSessionHandler: error getting token:`, error)
                     })
 
             } else {
@@ -53,7 +53,8 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
                     resolve(response.data.access_token);
                 })
                 .catch(function (error: any) {
-                    console.log('CloudSkilllSessionHandler: getToken error:',error);
+                    // TODO: remove log & throw
+                    console.error('CloudSkilllSessionHandler: getToken error:',error);
                     reject();
                 });
 
@@ -61,9 +62,10 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
     }
 
     connect(url: string, token: string) {
-
-        console.log('CloudSkilllSessionHandler: connect URL:', url);
-        console.log('CloudSkilllSessionHandler: connect token:', token);
+        if (process.env.DEBUG === 'true') {
+            console.log('DEBUG: CloudSkilllSessionHandler: connect URL:', url);
+            console.log('DEBUG: CloudSkilllSessionHandler: connect token:', token);
+        }
         const socketPath: string = '/socket-hub/'
         this._socket = io(url, {
             path: socketPath,

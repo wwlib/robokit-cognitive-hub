@@ -20,18 +20,22 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
         // console.log("auth", auth)
         if (auth) {
             const token = auth.replace("Bearer ", "")
-            console.log("auth token", token)
+            // console.log("auth token", token)
             if (!token) {
                 return next(new Error('socket.io DEVICE connection: unauthorized: Missing token.'))
             }
             let decodedAccessToken: any
             try {
                 decodedAccessToken = JwtAuth.decodeAccessToken(token)
-                console.log(decodedAccessToken)
+                if (process.env.DEBUG === 'true') {
+                    console.log('DEBUG: DeviceServer: decoded access token:')
+                    console.log(decodedAccessToken)
+                }
                 socket.data.accountId = decodedAccessToken.accountId
             } catch (error: any) {
+                // TODO: remove log & throw
                 console.error(error)
-                return next(new Error('socket.io DEVICE connection: unauthorized: Invalid token.'))
+                return next(new Error('DeviceServer: connection: unauthorized: Invalid token.'))
             }
             return next()
         } else {
@@ -40,45 +44,51 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
     })
 
     ioSocketServer.on('connection', function (socket) {
-        console.log(`socket.io: on DEVICE connection:`, socket.id)
+        console.log(`DeviceServer: on DEVICE connection:`, socket.id)
         const connection = ConnectionManager.getInstance().addConnection(ConnectionType.DEVICE, socket, socket.data.accountId)
         socket.emit('message', { source: 'RCH', event: 'handshake', message: 'DEVICE connection accepted' })
 
         socket.on('command', (command: RCSCommand) => {
-            if (command.type !== 'sync') {
-                console.log(`DeviceServer: on command:`, socket.id, socket.data.accountId, command)
-            }
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM)
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM, command.type)
             if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
+                if (process.env.DEBUG_CLOCK_SYNC === 'true') {
+                    console.log(`DEBUG_CLOCK_SYNC: DeviceServer: on sync command:`, socket.id, socket.data.accountId, command)
+                }
                 if (command.payload && typeof command.payload.syncOffset === 'number' ) {
                     if (connection) {
-                        // console.log(`updating syncOffset for device socket: ${socket.id}`)
+                        if (process.env.DEBUG_CLOCK_SYNC === 'true') {
+                            console.log(`DEBUG_CLOCK_SYNC: DeviceServer: updating syncOffset for Device socket: ${socket.id}`)
+                        }
                         connection.onSyncOffset(command.payload.syncOffset)
                     }
                 }
             } else {
+                if (process.env.DEBUG === 'true') {
+                    console.log(`DEBUG: DeviceServer: on command:`, socket.id, socket.data.accountId, command)
+                }
                 ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(socket.data.accountId, command)
             }
         })
 
         socket.on('message', (message) => {
-            console.log(`on message: ${message}`, socket.id, socket.data.accountId)
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM)
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.MESSAGE_TO)
+            if (process.env.DEBUG === 'true') {
+                console.log(`DEBUG: DeviceServer: on message: ${message}`, socket.id, socket.data.accountId)
+            }
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM, message.event)
             ConnectionManager.getInstance().broadcastDeviceMessageToSubscriptionsWithAccountId(socket.data.accountId, { message: message })
-            socket.emit('message', { source: 'RCH', event: 'ack', data: message })
+            // TODO: send ack?
+            // socket.emit('message', { source: 'RCH', event: 'ack', data: message })
         })
 
         socket.once('disconnect', function (reason) {
-            console.log(`on DEVICE disconnect: ${reason}: ${socket.id}`)
+            console.log(`DeviceServer: on DEVICE disconnect: ${reason}: ${socket.id}`)
             ConnectionManager.getInstance().removeConnection(ConnectionType.DEVICE, socket)
         })
 
         // ASR streaming
 
         socket.on('asrAudioStart', () => {
-            console.log(`on asrAudioStart`)
+            console.log(`DeviceServer: on asrAudioStart`)
             if (connection) {
                 connection.startAudio()
             }
@@ -92,12 +102,12 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
                     connection.provideAudio(data)
                 }
             } else {
-                console.log(`on asrAudio: NOT sending empty audio data.`)
+                console.log(`DeviceServer: on asrAudio: NOT sending empty audio data.`)
             }
         })
 
         socket.on('asrAudioEnd', () => {
-            console.log(`on asrAudioEnd`)
+            console.log(`DeviceServer: on asrAudioEnd`)
             if (connection) {
                 connection.endAudio()
             }
@@ -106,7 +116,10 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
         // photo
 
         socket.on('base64Photo', (base64PhotoData: string) => {
-            console.log(`on base64Photo:`, base64PhotoData)
+            if (process.env.DEBUG === 'true') {
+                console.log(`DEBUG: DeviceServer: on base64Photo: <photo data received>`)
+            }
+            // console.log(`on base64Photo:`, base64PhotoData)
             if (connection) {
                 connection.onBase64Photo(base64PhotoData)
             }

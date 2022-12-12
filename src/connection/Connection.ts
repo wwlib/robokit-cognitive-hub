@@ -35,6 +35,7 @@ export default class Connection {
     private _commandCountFromQuota: number;
     private _commandCountTo: number;
     private _messageCountFrom: number;
+    private _commandCountFromByType: any;
     private _messageCountFromQuota: number;
     private _messageCountTo: number;
     private _audioBytesFrom: number;
@@ -51,6 +52,7 @@ export default class Connection {
         this._syncOffset = 0
         this._lastSyncTimestamp = 0
         this._commandCountFrom = 0
+        this._commandCountFromByType = {}
         this._commandCountFromQuota = 0
         this._commandCountTo = 0
         this._messageCountFrom = 0
@@ -63,10 +65,14 @@ export default class Connection {
     }
 
     init() {
-        SkillsManager.getInstance().getSkillsManifest()
-            .then((skillsManifest: SkillsManifest) => {
-                this._skillsController = new SkillsController(this.skillsControllerCallback, { skillsManifest })
-            })
+        // only Device connections have skill controllers
+        // TODO: create ControllerConnection vs DeviceConnection classes
+        if (this._type === ConnectionType.DEVICE) {
+            SkillsManager.getInstance().getSkillsManifest()
+                .then((skillsManifest: SkillsManifest) => {
+                    this._skillsController = new SkillsController(this.skillsControllerCallback, { skillsManifest })
+                })
+        }
     }
 
     get type(): ConnectionType {
@@ -83,7 +89,8 @@ export default class Connection {
 
     toString(): string {
         const syncOffset = Math.round(this._syncOffset * 1000) / 1000
-        return `${this._accountId}: [${this._socketId.substring(0, 6)}] syncOffset: ${syncOffset} ms, commandsFrom: ${this._commandCountFrom}. messagesFrom: ${this._messageCountFrom}, audioFrom: ${this._audioBytesFrom}`
+        const commandCountFromByType: string = JSON.stringify(this._commandCountFromByType)
+        return `${this._accountId}: [${this._socketId.substring(0, 6)}] syncOffset: ${syncOffset} ms, commandsFrom: ${this._commandCountFrom}, commandCountFromByType: ${commandCountFromByType}, messagesFrom: ${this._messageCountFrom}, audioFrom: ${this._audioBytesFrom}`
     }
 
     emitEvent(eventName: string, data?: any) {
@@ -104,6 +111,13 @@ export default class Connection {
         switch (eventType) {
             case ConnectionEventType.COMMAND_FROM:
                 this._commandCountFrom += 1
+                if (typeof data === 'string') {
+                    if (!this._commandCountFromByType[data]) {
+                        this._commandCountFromByType[data] = 1
+                    } else {
+                        this._commandCountFromByType[data] += 1
+                    }
+                }
                 break;
             case ConnectionEventType.COMMAND_TO:
                 this._commandCountTo += 1
@@ -170,7 +184,7 @@ export default class Connection {
     }
 
     asrSessionHandlerCallback: AsrSessionHandlerCallbackType = (event: string, data: any) => {
-        console.log(`asrSessionHandlerCallback`, event)
+        // console.log(`asrSessionHandlerCallback`, event)
         if (this._skillsController) {
             switch (event) {
                 case 'asrSOS':

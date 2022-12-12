@@ -24,11 +24,15 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
             let decodedAccessToken: any
             try {
                 decodedAccessToken = JwtAuth.decodeAccessToken(token)
-                console.log(decodedAccessToken)
+                if (process.env.DEBUG === 'true') {
+                    console.log('DEBUG: ControllerServer: decoded access token:')
+                    console.log(decodedAccessToken)
+                }
                 socket.data.accountId = decodedAccessToken.accountId
             } catch (error: any) {
+                // TODO: remove log & throw
                 console.error(error)
-                return next(new Error('socket.io CONTROLLER connection: unauthorized: Invalid token.'))
+                return next(new Error('ControllerServer connection: unauthorized: Invalid token.'))
             }
             return next()
         }
@@ -39,15 +43,18 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
     })
 
     ioSocketServer.on('connection', function (socket) {
-        console.log(`socket.io: on CONTROLLER connection:`, socket.id)
+        if (process.env.DEBUG === 'true') {
+            console.log(`DEBUG: ControllerServer: on CONTROLLER connection:`, socket.id)
+        }
         const connection = ConnectionManager.getInstance().addConnection(ConnectionType.CONTROLLER, socket, socket.data.accountId)
-        socket.emit('message', { message: 'Hub message: A new CONTROLLER has joined!' })
+        socket.emit('message', { source: 'RCH:ControllerServer', event: 'handshake', message: 'Controller connection accepted' })
 
         socket.on('command', (command: RCSCommand) => {
-            console.log(`ControllerServer: on command:`, socket.id, command)
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM)
-
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM, command.type)
             if (command.type === 'hubCommand' && command.name === 'subscribe' && command.payload && command.payload.connectionType === 'device' && command.payload.accountId) {
+                if (process.env.DEBUG === 'true') {
+                    console.log(`DEBUG: ControllerServer: on hub command:`, socket.id, socket.data.accountId, command)
+                }
                 ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
                 command = {
                     id: 'tbd',
@@ -61,35 +68,41 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
                     },
                     createdAtTime: new Date().getTime() // server time is synchronized time
                 }
-                socket.emit('command', command)
+                socket.emit('command', command) // ACK
             } else if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
+                if (process.env.DEBUG_CLOCK_SYNC === 'true') {
+                    console.log(`DEBUG_CLOCK_SYNC: ControllerServer: on sync command:`, socket.id, socket.data.accountId, command)
+                }
                 if (command.payload && typeof command.payload.syncOffset === 'number') {
                     if (connection) {
-                        console.log(`updating syncOffset for controller socket: ${socket.id}`)
+                        if (process.env.DEBUG_CLOCK_SYNC === 'true') {
+                            console.log(`DEBUG_CLOCK_SYNC: ControllerServer: updating syncOffset for Controller socket: ${socket.id}`)
+                        }
                         connection.onSyncOffset(command.payload.syncOffset)
                     }
                 }
             } else {
-                const accountId = command ? command.targetAccountId : 'na'
-                socket.emit('message', { message: `Hub message: command received for ${accountId}: ${command.name}` })
+                if (process.env.DEBUG === 'true') {
+                    console.log(`DEBUG: ControllerServer: on command:`, socket.id, socket.data.accountId, command)
+                }
 
                 // route command to device
                 if (command && command.targetAccountId) {
-                    ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO)
+                    ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO, command.type)
                     ConnectionManager.getInstance().sendCommandToTarget(ConnectionType.DEVICE, command, command.targetAccountId)
                 }
             }
         })
 
         socket.once('disconnect', function (reason) {
-            console.log(`on CONTROLLER disconnect: ${reason}: ${socket.id}`)
+            console.log(`ControllerServer: on CONTROLLER disconnect: ${reason}: ${socket.id}`)
             ConnectionManager.getInstance().removeConnection(ConnectionType.CONTROLLER, socket)
         })
 
         // time sync
 
         socket.on('timesync', function (data) {
-            // console.log('controller timesync message:', data)
+            // console.log('ControllerServer: controller timesync message:', data)
             socket.emit('timesync', {
                 id: data && 'id' in data ? data.id : null,
                 result: Date.now()

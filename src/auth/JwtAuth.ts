@@ -82,8 +82,8 @@ export class JwtAuth {
         try {
             payload = jwt.verify(token, JwtAuth.ACCESS_PRIVATE_KEY_MOCK)
         } catch (error: any) {
-            console.warn('decodeAccessToken: handled error Ignoring:', error.message)
-            console.warn('refreshToken:', refreshToken)
+            console.log('JWTAuth: decodeAccessToken: handled error Ignoring:', error.message)
+            console.log('JWTAuth: refreshToken:', refreshToken)
         }
         return payload
     }
@@ -95,7 +95,7 @@ export class JwtAuth {
         try {
             payload = jwt.verify(token, JwtAuth.REFRESH_PRIVATE_KEY_MOCK)
         } catch (error: any) {
-            console.warn(`decodeRefreshToken: handled error Ignoring:`, error.message)
+            console.log(`JWTAuth: decodeRefreshToken: handled error Ignoring:`, error.message)
         }
         return payload
     }

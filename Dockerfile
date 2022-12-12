@@ -20,6 +20,7 @@ WORKDIR /usr/app
 COPY --from=builder /usr/app/dist/ /usr/app/dist/
 COPY --from=builder /usr/app/node_modules/ /usr/app/node_modules/
 COPY --from=builder /usr/app/public/ /usr/app/public/
+COPY --from=builder /usr/app/hub-controller-app/ /usr/app/hub-controller-app/
 
 ENTRYPOINT ["node", "dist/index.js"]
 # ENTRYPOINT ["bash"]

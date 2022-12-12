@@ -34,7 +34,7 @@ export class SiteHandlers {
     }
 
     public signinHandler: Handler = async (req: AuthRequest, res: Response) => {
-        console.log('signinHandler')
+        // console.log('signinHandler')
         Model.getInstance().onRequest()
         res.status(StatusCodes.OK).send(this.getSigninContent(req.auth?.accountId))
     }
@@ -44,7 +44,7 @@ export class SiteHandlers {
     }
 
     public dashboardHandler: Handler = async (req: AuthRequest, res: Response) => {
-        console.log('dashboardHandler')
+        // console.log('dashboardHandler')
         Model.getInstance().onRequest()
         res.status(StatusCodes.OK).send(this.getDashboardContent(req.auth?.accountId))
     }
@@ -55,7 +55,7 @@ export class SiteHandlers {
             data.push(15000 + Math.floor(Math.random()*5000))
         }
         const deviceConnections: Connection[] | undefined = ConnectionManager.getInstance().getConnectionsAsArray(ConnectionType.DEVICE)
-        console.log(deviceConnections)
+        // console.log(deviceConnections)
         let deviceInfo: string[] = []
         if (deviceConnections) {
             deviceInfo = deviceConnections.map((connection: Connection) => {
@@ -63,7 +63,7 @@ export class SiteHandlers {
             })
         }
         const controllerConnections: Connection[] | undefined = ConnectionManager.getInstance().getConnectionsAsArray(ConnectionType.CONTROLLER)
-        console.log(controllerConnections)
+        // console.log(controllerConnections)
         let controllerInfo: string[] = []
         if (controllerConnections) {
             controllerInfo = controllerConnections.map((connection: Connection) => {
@@ -74,7 +74,7 @@ export class SiteHandlers {
     }
 
     public consoleHandler: Handler = async (req: AuthRequest, res: Response) => {
-        console.log('consoleHandler')
+        // console.log('consoleHandler')
         Model.getInstance().onRequest()
         const command: string = req.query?.command ? `${req.query?.command}` : ''
         let summary = ''
@@ -92,7 +92,7 @@ export class SiteHandlers {
     }
 
     public forbiddenHandler: Handler = async (req: AuthRequest, res: Response) => {
-        console.log('forbiddenHandler')
+        // console.log('forbiddenHandler')
         Model.getInstance().onRequest()
         res.status(StatusCodes.OK).json({ error: 'Forbidden.' })
     }

@@ -50,7 +50,7 @@ export default class SkillsController {
 
     broadcastEventToSkills(event: any) {
         for (var [key, value] of this._skillSessionHandlers.entries()) {
-            console.log(`broadcastEventToSkills: ${key}`, event)
+            // console.log(`broadcastEventToSkills: ${key}`, event)
             const skillSessionHandler: AbstractSkillSessionHandler = value
             skillSessionHandler.onEvent(event)
         }
