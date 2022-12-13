@@ -39,7 +39,8 @@ async function getToken() {
                     resolve(response.data.access_token);
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    // TODO: remove log and throw
+                    console.error(error);
                     reject();
                 });
 
@@ -217,8 +218,8 @@ function connect(token) {
                                     }
                                 }
                             }
-                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
-                            //rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiNoteCommand(48, 3, 127, startAtTime, 'tbd')
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'CLI:Controller', 'tbd', new Date().getTime() + syncOffset)
+                            //rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiNoteCommand(48, 3, 127, startAtTime, 'CLI:Controller', 'tbd')
                         } else if (subCommand === 'midi') {
                             commandData = {
                                 type: 'command',
@@ -231,11 +232,11 @@ function connect(token) {
                                     }
                                 }
                             }
-                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
-                            // rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiFileCommand('twinkle.mid', [1], startAtTime, 'tbd')
+                            rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'CLI:Controller', 'tbd', new Date().getTime() + syncOffset)
+                            // rcsCommand = rcs.CommandFactory.getInstance().createPlayMidiFileCommand('twinkle.mid', [1], startAtTime, 'CLI:Controller', 'tbd')
                         } else {
                             // prompt
-                            rcsCommand = rcs.CommandFactory.getInstance().createPlayPromptCommand(subCommand, 'tbd')
+                            rcsCommand = rcs.CommandFactory.getInstance().createPlayPromptCommand(subCommand, 'CLI:Controller', 'tbd')
                         }
                         break;
                     case 'getBase64Photo':
@@ -244,7 +245,7 @@ function connect(token) {
                             name: 'getBase64Photo',
                             payload: {}
                         }
-                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
+                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'CLI:Controller', 'tbd', new Date().getTime() + syncOffset)
                         break;
                     case 'nop':
                         commandData = {
@@ -252,7 +253,7 @@ function connect(token) {
                             name: 'nop',
                             payload: {}
                         }
-                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'tbd', new Date().getTime() + syncOffset)
+                        rcsCommand = rcs.CommandFactory.getInstance().createCommand(commandData, 'CLI:Controller', 'tbd', new Date().getTime() + syncOffset)
                         break;
                 }
                 if (rcsCommand) {

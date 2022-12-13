@@ -144,6 +144,7 @@ export default class Connection {
         this.emitEvent('asrSOS')
         const eventCommand: RCSCommand = {
             id: 'tbd',
+            source: 'RCH:Connection',
             targetAccountId: this.accountId,
             type: RCSCommandType.event,
             name: RCSCommandName.asrSOS,
@@ -156,6 +157,7 @@ export default class Connection {
         this.emitEvent('asrEOS')
         const eventCommand: RCSCommand = {
             id: 'tbd',
+            source: 'RCH:Connection',
             targetAccountId: this.accountId,
             type: RCSCommandType.event,
             name: RCSCommandName.asrEOS,
@@ -172,6 +174,7 @@ export default class Connection {
         this.emitEvent('asrEnded', data)
         const eventCommand: RCSCommand = {
             id: 'tbd',
+            source: 'RCH:Connection',
             targetAccountId: this.accountId,
             type: RCSCommandType.event,
             name: RCSCommandName.asrEnded,
@@ -247,6 +250,7 @@ export default class Connection {
         if (base64PhotoData) {
             const eventCommand: RCSCommand = {
                 id: 'tbd',
+                source: 'RCH:Connection',
                 targetAccountId: this.accountId,
                 type: RCSCommandType.event,
                 name: 'base64Photo', // TODO: ass RCSCommandName.base64Photo,

@@ -50,11 +50,11 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         socket.on('command', (command: RCSCommand) => {
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM, command.type)
-            if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
+            if (command.type === RCSCommandType.sync) {
                 if (process.env.DEBUG_CLOCK_SYNC === 'true') {
                     console.log(`DEBUG_CLOCK_SYNC: DeviceServer: on sync command:`, socket.id, socket.data.accountId, command)
                 }
-                if (command.payload && typeof command.payload.syncOffset === 'number' ) {
+                if (command.name === RCSCommandName.syncOffset && command.payload && typeof command.payload.syncOffset === 'number' ) {
                     if (connection) {
                         if (process.env.DEBUG_CLOCK_SYNC === 'true') {
                             console.log(`DEBUG_CLOCK_SYNC: DeviceServer: updating syncOffset for Device socket: ${socket.id}`)

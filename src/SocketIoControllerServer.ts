@@ -58,6 +58,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
                 ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
                 command = {
                     id: 'tbd',
+                    source: 'RCH:ControllerServer',
                     targetAccountId: command.payload.accountId, // accountId of targeted device/app
                     type: RCSCommandType.hubCommand,
                     message: `subscribed to ${command.payload.accountId}`,
@@ -69,11 +70,11 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
                     createdAtTime: new Date().getTime() // server time is synchronized time
                 }
                 socket.emit('command', command) // ACK
-            } else if (command.type === RCSCommandType.sync && command.name === RCSCommandName.syncOffset) {
+            } else if (command.type === RCSCommandType.sync) {
                 if (process.env.DEBUG_CLOCK_SYNC === 'true') {
                     console.log(`DEBUG_CLOCK_SYNC: ControllerServer: on sync command:`, socket.id, socket.data.accountId, command)
                 }
-                if (command.payload && typeof command.payload.syncOffset === 'number') {
+                if (command.name === RCSCommandName.syncOffset && command.payload && typeof command.payload.syncOffset === 'number') {
                     if (connection) {
                         if (process.env.DEBUG_CLOCK_SYNC === 'true') {
                             console.log(`DEBUG_CLOCK_SYNC: ControllerServer: updating syncOffset for Controller socket: ${socket.id}`)
