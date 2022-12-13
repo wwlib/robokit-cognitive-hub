@@ -6,26 +6,29 @@ const readline = require("readline");
 const axios = require('axios');
 const { io } = require("socket.io-client");
 const timesync = require('timesync');
+const rcs = require('robokit-command-system')
 
 const { WaveFileAudioSource } = require('cognitiveserviceslib')
 
 dotenv.config();
 
-// curl --location --request POST 'https://localhost:8000/auth' \
-//     --header 'Content-Type: application/json' \
-//     --data-raw '{
-//        "username": "user1",
-//        "password": "asldkfj"
-//      }'
+/*
+curl --location --request POST 'http://localhost:8082/auth' \
+     --header 'Content-Type: application/json' \
+     --data-raw '{
+       "accountId": "robot1",
+       "password": "12345!"
+     }'
+*/
 
 async function getToken() {
     if (process.env.TOKEN) {
         return process.env.TOKEN;
-    } else if (process.env.AUTH_URL && process.env.USERNAME && process.env.PASSWORD) {
+    } else if (process.env.AUTH_URL && process.env.DEVICE_ACCOUNT_ID && process.env.DEVICE_PASSWORD) {
         return new Promise((resolve, reject) => {
             axios.post(process.env.AUTH_URL, {
-                username: process.env.USERNAME,
-                password: process.env.PASSWORD
+                accountId: process.env.DEVICE_ACCOUNT_ID,
+                password: process.env.DEVICE_PASSWORD
             },
                 {
                     headers: { 'Content-Type': 'application/json' }
@@ -35,13 +38,13 @@ async function getToken() {
                     resolve(response.data.access_token);
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    console.log('CLI: on getToken error:', error);
                     reject();
                 });
 
         });
     } else {
-        return '';
+        throw new Error('Unable to get token.');
     }
 }
 
@@ -52,21 +55,34 @@ function connect(token) {
         output: process.stdout
     });
 
-    console.log(`URL:`, process.env.URL);
-    console.log('token:', token);
+    console.log(`CLI: URL:`, process.env.URL);
+    console.log('CLI: token:', token);
     // const ws = new WebSocket(process.env.URL, { headers: { Authorization: `Bearer ${token}` } })
-    const ws = io(process.env.URL, {
-        path: process.env.SOCKET_PATH,
+    const socket = io(process.env.URL, {
+        path: process.env.DEVICE_SOCKET_PATH,
         extraHeaders: {
             Authorization: `Bearer ${token}`,
         },
         reconnection: false,
     });
 
+    // synchronized clock
+
+    onSynchronizedClockUpdate = (timeData) => {
+        if (showTimeEvents) {
+            console.log(`CLI: clockUpdate: ${timeData.simpleFormat}`)
+        }
+    }
+
+    let showTimeEvents = false
+    let synchronizedClock = new rcs.SynchronizedClock();
+    synchronizedClock.on('1sec', onSynchronizedClockUpdate)
+    synchronizedClock.startUpdate()
+
     // timesync
 
     const ts = timesync.create({
-        server: ws,
+        server: socket,
         interval: 5000
     });
 
@@ -75,7 +91,21 @@ function connect(token) {
     });
 
     ts.on('change', function (offset) {
-        console.log('timesync: changed offset: ' + offset + ' ms');
+        if (showTimeEvents) {
+            console.log('CLI: timesync: changed offset: ' + offset + ' ms');
+        }
+        if (synchronizedClock) {
+            synchronizedClock.onSyncOffsetChanged(offset)
+        }
+        const command = {
+            id: 'tbd',
+            type: 'sync',
+            name: 'syncOffset',
+            payload: {
+                syncOffset: offset,
+            }
+        }
+        socket.emit('command', command)
     });
 
     ts.send = function (socket, data, timeout) {
@@ -90,39 +120,52 @@ function connect(token) {
         });
     };
 
-    ws.on('timesync', function (data) {
+    socket.on('timesync', function (data) {
         //console.log('receive', data);
         ts.receive(null, data);
     });
 
     // socket messages
 
-    ws.on("connect", () => {
-        console.log(ws.id); // "G5p5..."
+    socket.on("connect", () => {
+        console.log('CLI: on connect: socket id:', socket.id); // "G5p5..."
     });
 
-    ws.on('disconnect', function () {
-        console.log(`on disconnect. closing...`);
+    socket.on('disconnect', function () {
+        console.log(`CLI: on disconnect. closing...`);
+        if (synchronizedClock) {
+            synchronizedClock.dispose()
+            synchronizedClock = undefined
+        }
         process.exit(0);
     });
 
-    ws.on('message', function (data) {
-        console.log(data.message);
+    rcs.CommandProcessor.getInstance().on('commandCompleted', (commandAck) => {
+        console.log(`command completed:`, commandAck)
+        socket.emit('command', commandAck)
+    })
+
+    socket.on('command', function (command) {
+        console.log('CLI: on command', command);
+        rcs.CommandProcessor.getInstance().processCommand(command)
         ask("> ");
     });
 
-    ws.emit('message', 'CONNECTED');
-
-    ws.on('asrSOS', function () {
-        console.log(`asrSOS`);
+    socket.on('message', function (data) {
+        console.log('CLI: on message:', data);
+        ask("> ");
     });
 
-    ws.on('asrResult', function (data) {
-        console.log(`asrResult`, data);
+    socket.on('asrSOS', function () {
+        console.log(`CLI: on asrSOS`);
     });
 
-    ws.on('asrEnded', function (data) {
-        console.log(`asrEnded`, data);
+    socket.on('asrResult', function (data) {
+        console.log(`CLI: on asrResult`, data);
+    });
+
+    socket.on('asrEnded', function (data) {
+        console.log(`CLI: on asrEnded`, data);
         ask("> ");
     });
 
@@ -160,6 +203,9 @@ function connect(token) {
         rl.question(prompt, function (input) {
             if (input === 'quit') {
                 process.exit(0)
+            } else if (input === 'clock') {
+                showTimeEvents = !showTimeEvents
+                ask("> ")
             } else if (input === 'asr') {
                 const options = {
                     filename: 'do-you-like-mac-n-cheese.wav',
@@ -167,18 +213,22 @@ function connect(token) {
                 const waveFileAudioSource = new WaveFileAudioSource(options)
                 waveFileAudioSource.on('audio', data => {
                     // console.log(`on audio`, data);
-                    ws.emit('asrAudio', data);
+                    socket.emit('asrAudio', data);
                 })
                 waveFileAudioSource.on('done', () => {
-                    console.log(`asrAudio done`);
-                    ws.emit('asrAudioEnd');
+                    console.log(`CLI: on asrAudio done`);
+                    socket.emit('asrAudioEnd');
                 })
-                ws.emit('asrAudioStart');
+                socket.emit('asrAudioStart');
                 waveFileAudioSource.start();
             } else {
-                const messageData = input;
+                const messageData = {
+                    source: 'CLI',
+                    event: 'user-input',
+                    data: { input: input }
+                }
                 // ws.send(messageData);
-                ws.emit('message', messageData)
+                socket.emit('message', messageData)
             }
         });
     }

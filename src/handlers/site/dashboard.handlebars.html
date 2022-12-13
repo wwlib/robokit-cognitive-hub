@@ -18,12 +18,12 @@
 
 <body>
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="/">Microservice name</a>
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="/">Robokit Cognitive Hub</a>
         <input class="form-control form-control-dark w-100 rounded-0 border-0" type="text" placeholder="Search"
             aria-label="Search">
-        <div class="navbar-nav navbar-userId">
-            <div class="navbar-userId-label">userId:</div>
-            <div>{{userId}}</div>
+        <div class="navbar-nav navbar-accountId">
+            <div class="navbar-accountId-label">accountId:</div>
+            <div>{{accountId}}</div>
         </div>
         <div class="navbar-nav">
             <div class="nav-item text-nowrap">
@@ -75,6 +75,18 @@
                 <div class="col-sm-6">
                     <label for="requestCount" class="form-label">Request Count</label>
                     <input type="text" class="form-control" id="requestCount" placeholder="" value="{{requestCount}}"
+                        required>
+                    <p></p>
+                </div>
+                <div class="col-sm-6">
+                    <label for="requestCount" class="form-label">Device Connections</label>
+                    <input type="text" class="form-control" id="deviceConnections" placeholder="" value="{{deviceConnections}}"
+                        required>
+                    <p></p>
+                </div>
+                <div class="col-sm-6">
+                    <label for="requestCount" class="form-label">Controller Connections</label>
+                    <input type="text" class="form-control" id="controllerConnections" placeholder="" value="{{controllerConnections}}"
                         required>
                     <p></p>
                 </div>

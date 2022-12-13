@@ -38,14 +38,14 @@ For details about the project structure, see: [A Nodejs Microservice Template](h
 
 Copy `.env-example` to `.env`
 ```
-SERVER_PORT=8000
+SERVER_PORT=8082
 USE_AUTH=true
 AZURE_SPEECH_SUBSCRIPTION_KEY=<YOUR-SUBSCRIPTION-KEY>
 AZURE_SPEECH_TOKEN_ENDPOINT=https://azurespeechserviceeast.cognitiveservices.azure.com/sts/v1.0/issuetoken
 AZURE_SPEECH_REGION=eastus
 ```
 
-`docker run -it --rm -p 8000:8000 --env-file ./.env robokit-cognitive-hub` 
+`docker run -it --rm -p 8082:8082 --env-file ./.env robokit-cognitive-hub` 
 - or `npm run docker:run`
 
 
@@ -54,21 +54,21 @@ AZURE_SPEECH_REGION=eastus
 Example auth request:
 
 ```sh
-curl --location --request POST 'http://localhost:8000/auth' \
+curl --location --request POST 'http://localhost:8082/auth' \
      --header 'Content-Type: application/json' \
      --data-raw '{
-       "username": "user1",
+       "accountId": "robot1",
        "password": "12345!"
      }'
 ```
 
 ```json
-{"message":"Logged in successfully.","access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyMSIsImF1dGgiOnsicGVybWlzc2lvbnMiOlt7InNjb3BlcyI6WyJyZWFkIl0sInJlc291cmNlIjoiZXhhbXBsZSJ9XX0sImlhdCI6MTY1NDM2NzQ5NSwiZXhwIjoxNjU0MzY3NTU1fQ.J7yxsSoOYTvNQtMkLrmlY_TEZT6x4jEvYvnI_Gqr64Q","refresh_toke":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyMSIsImlhdCI6MTY1NDM2NzQ5NSwiZXhwIjoxNjU0NDUzODk1fQ.Lj7fairF_ABjeXzIc_-38aMqfj3ce08fd33V3ymoa04","user_id":"user1"}
+{"message":"Logged in successfully.","access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJyb2JvdDEiLCJhdXRoIjp7InBlcm1pc3Npb25zIjpbeyJzY29wZXMiOlsicmVhZCIsImFkbWluIl0sInJlc291cmNlIjoiZXhhbXBsZSJ9XX0sImlhdCI6MTY1NjgxODY3MSwiZXhwIjoxNjU2ODE4NzMxfQ.TB_UUwFkc0fQLYi1q80hedBMvR7h4EIHzTSIoVTKOeA","refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJyb2JvdDEiLCJpYXQiOjE2NTY4MTg2NzEsImV4cCI6MTY1NjkwNTA3MX0.VDMlgUPiP-0r9EJ4_Q93gqufPBCmqIYXQ5PCr9UsJ8s","account_id":"robot1"}
 ```
 
 ### http - dashboard
 
-http://localhost:8000/
+http://localhost:8082/
 
 
 ### cli socket client (REPL)

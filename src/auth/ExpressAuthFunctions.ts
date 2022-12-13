@@ -26,21 +26,21 @@ export const authHttp = (permissions: string[]) =>
         accessToken = req.cookies[ACCESS_TOKEN_NAME] as string
       }
       const decodedAccessToken = JwtAuth.decodeAccessToken(accessToken, refreshToken)
-      const userId = decodedAccessToken ? decodedAccessToken.userId : ''
+      const accountId = decodedAccessToken ? decodedAccessToken.accountId : ''
       checkPermissions(expectedPermissions, decodedAccessToken)
       req.auth = {
-        userId,
+        accountId,
         accessTokenPayload: decodedAccessToken
       }
       next();
     } catch (error: any) {
-      console.error(error)
+      console.error('ExpressAuthFunctions: Error:', error.message)
       if (error.code === StatusCodes.FORBIDDEN) {
         res.redirect('/forbidden')
       } else {
         if (refreshToken) {
           const encodedUrl = encodeURIComponent(req.url)
-          console.log(`starting refresh. encoded url: ${encodedUrl}`)
+          console.log(`ExpressAuthFunctions: starting refresh. encoded url: ${encodedUrl}`)
           res.redirect(`/refresh/?destination=${encodedUrl}`)
         } else {
           res.redirect('/signin/')
@@ -62,11 +62,11 @@ export const getPermissionsFromDecodedAccessToken = (payload: any): string[] => 
 
 export const checkPermissions = (expectedPermissions: string[], decodedAccessToken: any) => {
   if (!expectedPermissions.length) {
-    console.info('Authorization is enforced but no permissions are required for this request.')
+    // console.log('Authorization is enforced but no permissions are required for this request.')
     return
   }
   if (!decodedAccessToken) {
-    throw errors.ForbiddenError('Invalid access token payload.')
+    throw new Error('decodedAccessToken is undefined.')
   }
   const tokenPermissions = getPermissionsFromDecodedAccessToken(decodedAccessToken)
   if (expectedPermissions.every((perm) => tokenPermissions.includes(perm))) {
@@ -81,11 +81,11 @@ export const checkPermissions = (expectedPermissions: string[], decodedAccessTok
 export const getTokenFromWebsocket = (req: IncomingMessage): string | undefined => {
   let token = req.headers.authorization?.split('Bearer ').pop()
   if (!token || token === '') {
-    console.info({ token }, 'Token not found in header, looking in query string.')
+    // console.log({ token }, 'Token not found in header, looking in query string.')
     const location = new URL(req.url as string, `http://${req.headers.host}`)
     const headerToken = location.searchParams.get('accessToken')
     if (headerToken !== null) {
-      console.info({ headerToken }, 'Token found in query parameter.')
+      // console.log({ headerToken }, 'Token found in query parameter.')
       token = headerToken
     }
   }
@@ -101,13 +101,14 @@ export const socketAuthorization = (req: IncomingMessage) => {
   try {
     return JwtAuth.decodeAccessToken(token)
   } catch (error: any) {
-    console.error(error)
+    // TODO: remove log & throw
+    console.error(`ExpressAuthFunctions: socketAuthorization error`, error)
     throw errors.UnauthorizedError('Unauthorized: Invalid token.')
   }
 }
 
 export const sendErrorAndDestroySocket = (wss: WebSocketServer, req: IncomingMessage, socket: Duplex, head: Buffer, error: errors.WSErrorResponse) => {
-  console.error('sendErrorAndDestroySocket:', error)
+  console.error('ExpressAuthFunctions: sendErrorAndDestroySocket:', error)
   socket.write(`HTTP/1.1 ${error.code} ${error.result.message}\r\n\r\n`)
   socket.destroy()
 }

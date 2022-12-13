@@ -1,0 +1,31 @@
+{
+    "skills": {
+        "clock": {
+            "id": "clock",
+            "launchCriteria": {
+                "asr": "*"
+            },
+            "priority": 0
+        },
+        "echo": {
+            "id": "echo",
+            "launchCriteria": {
+                "asr": "*"
+            },
+            "priority": 10
+        },
+        "chitchat": {
+            "id": "chitchat",
+            "launchCriteria": {
+                "asr": "*"
+            },
+            "priority": 1,
+            "serviceData": {
+                "url": "http://localhost:8083",
+                "authUrl": "http://localhost:8083/auth",
+                "accountId": "robot1",
+                "password": "opensesame"
+            }
+        }
+    }
+}

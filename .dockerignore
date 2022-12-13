@@ -1,10 +1,16 @@
 dist
 docs
 hide
-node_modules
-notebooks
-tools
+# un-excluding node_modules (for now) because copying it it makes the build faster
+# node_modules
 
 .env
-asrSession-out.wav
+example.env
+compose.env
+docker-compose.yml
+Dockerfile
+notebooks
+tools
 README.md
+
+asrSession-out.wav
