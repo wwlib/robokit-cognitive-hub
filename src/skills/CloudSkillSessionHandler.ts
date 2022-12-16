@@ -1,9 +1,7 @@
 import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
-import { SynchronizedClock } from 'robokit-command-system'
 
 const axios = require('axios');
 const { io } = require("socket.io-client");
-const timesync = require('timesync');
 
 export default class CloudSkillSessionHandler extends AbstractSkillSessionHandler {
 
@@ -75,77 +73,14 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
             reconnection: false,
         });
 
-        // synchronized clock
-
-        const onSynchronizedClockUpdate = (timeData: any) => {
-            if (showTimeEvents) {
-                console.log(`CloudSkilllSessionHandler: clockUpdate: ${timeData.simpleFormat}`)
-            }
-        }
-
-        let showTimeEvents = false
-        let synchronizedClock: SynchronizedClock | undefined = new SynchronizedClock();
-        synchronizedClock.on('1sec', onSynchronizedClockUpdate)
-        synchronizedClock.startUpdate()
-
-        // timesync
-
-        const ts = timesync.create({
-            server: this._socket,
-            interval: 5000
-        });
-
-        ts.on('sync', function (state: string) {
-            // console.log('timesync: sync ' + state + '');
-        });
-
-        ts.on('change', (offset: number) => {
-            if (showTimeEvents) {
-                console.log('CloudSkilllSessionHandler: timesync: changed offset: ' + offset + ' ms');
-            }
-            if (synchronizedClock) {
-                synchronizedClock.onSyncOffsetChanged(offset)
-            }
-            const command = {
-                id: 'tbd',
-                type: 'sync',
-                name: 'syncOffset',
-                payload: {
-                    syncOffset: offset,
-                }
-            }
-            this._socket.emit('command', command)
-        });
-
-        ts.send = function (socket: any, data: any, timeout: number) {
-            //console.log('send', data);
-            return new Promise(function (resolve, reject) {
-                var timeoutFn = setTimeout(reject, timeout);
-
-                socket.emit('timesync', data, function () {
-                    clearTimeout(timeoutFn);
-                    resolve(null);
-                });
-            });
-        };
-
-        this._socket.on('timesync', function (data: any) {
-            //console.log('receive', data);
-            ts.receive(null, data);
-        });
-
         // socket messages
 
         this._socket.on("connect", () => {
-            console.log('CloudSkillSessionHandler: on connect', this._socket.id); // "G5p5..."
+            console.log('CloudSkillSessionHandler: on connect.', this._socket.id); // "G5p5..."
         });
 
         this._socket.on('disconnect', function () {
-            console.log('CloudSkillSessionHandler: on disconnect. halting clock sync ...');
-            if (synchronizedClock) {
-                synchronizedClock.dispose()
-                synchronizedClock = undefined
-            }
+            console.log('CloudSkillSessionHandler: on disconnect.');
         });
 
         this._socket.on('command', (command: any) => {

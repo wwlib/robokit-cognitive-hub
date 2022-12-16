@@ -1,3 +1,9 @@
+/**
+ * This is the doc comment for SocketIoControllerServer.ts
+ *
+ * @module
+ */
+
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIoServer } from 'socket.io'
 import { JwtAuth } from './auth/JwtAuth'
@@ -5,6 +11,7 @@ import ConnectionManager from 'src/connection/ConnectionManager'
 import { ConnectionEventType, ConnectionType } from 'src/connection/Connection'
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
 
+/** setupSocketIoControllerServer is... */
 export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: string): SocketIoServer => {
     const ioSocketServer = new SocketIoServer(httpServer, {
         path: path,

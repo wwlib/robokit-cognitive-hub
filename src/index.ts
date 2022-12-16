@@ -1,3 +1,9 @@
+// index.ts
+/**
+ * This is the doc comment for index.ts
+ *
+ * @packageDocumentation
+ */
 import express from 'express'
 import http, { Server } from 'http'
 import { Server as SocketIoServer } from 'socket.io';
@@ -16,15 +22,17 @@ const errorhandler = require('errorhandler')
 
 dotenv.config()
 
-const main = async () => {
+/**
+ * main() starts the services...
+ */
+export async function main() {
   const app = express()
 
-  console.log(`Looking for hub-controller-app at path:`, process.env.HUB_CONTROLLER_APP_PATH)
+  console.log(`RobokitCognitiveHub: Looking for hub-controller-app at path:`, process.env.HUB_CONTROLLER_APP_PATH)
   // Set expected Content-Types
   app.use(express.json())
   app.use(express.text())
   app.use(express.static('public'));
-  app.use(express.static(path.join(__dirname, process.env.HUB_CONTROLLER_APP_PATH, 'build')))
   app.use(cookieParser());
 
   // https://www.section.io/engineering-education/how-to-use-cors-in-nodejs-with-express/
@@ -33,7 +41,7 @@ const main = async () => {
     origin: process.env.CORS_ORIGIN, // 'http://localhost:3000',
     credentials: true,
   }));
-  console.log(`Allowing CORS origin: ${process.env.CORS_ORIGIN}`)
+  console.log(`RobokitCognitiveHub: Allowing CORS origin: ${process.env.CORS_ORIGIN}`)
 
   // ErrorHandler in DEBUG mode
   if (process.env.DEBUG === 'true') {
@@ -46,9 +54,9 @@ const main = async () => {
   const serviceOptions = { useAuth: false }
   if (process.env.USE_AUTH === 'true') {
     serviceOptions.useAuth = true;
-    console.log('(USE_AUTH === true) so using mock JWT auth.')
+    console.log('RobokitCognitiveHub: (USE_AUTH === true) so using mock JWT auth.')
   } else {
-    console.log('(USE_AUTH !== true) so NOT using mock JWT auth.')
+    console.log('RobokitCognitiveHub: (USE_AUTH !== true) so NOT using mock JWT auth.')
   }
 
   // http routes
@@ -66,19 +74,16 @@ const main = async () => {
   expressRouterWrapper.addGetHandler('/dashboard', handlers.SiteHandlers.getInstance().dashboardHandler, ['example:read'])
   expressRouterWrapper.addGetHandler('/console', handlers.SiteHandlers.getInstance().consoleHandler, ['example:admin'])
 
-  expressRouterWrapper.addGetHandlerNoAuth('/', handlers.SiteHandlers.getInstance().redirectToDashboardHandler)
-
   // UTIL
   expressRouterWrapper.addGetHandler('/time', handlers.TimeHandler, ['example:read'])
+
+  // HubControllerApp
+  expressRouterWrapper.addGetHandler('*', handlers.SiteHandlers.getInstance().hubControllerAppHandler, ['example:read'])
 
   if (expressRouterWrapper) {
     const routerPath = expressRouterWrapper.path !== '' ? `/${expressRouterWrapper.path}` : ''
     app.use(`${routerPath}`, expressRouterWrapper.getRouter())
   }
-
-  app.get('*', async (req, res) => {
-    res.sendFile(path.join(__dirname, process.env.REASONGRAPH_APP_PATH, 'build', 'index.html'))
-  })
 
   const port = parseInt(<string>process.env.SERVER_PORT) || 8082
   const httpServer: Server = http.createServer(app)
@@ -89,25 +94,30 @@ const main = async () => {
   setupSocketIoControllerServer(httpServer, '/socket-controller')
 
   process.on('SIGINT', () => {
-    console.error('Received interrupt, shutting down')
+    const errorTimestamp = new Date().toLocaleString()
+    console.error(`RobokitCognitiveHub: [${errorTimestamp}] Received interrupt, shutting down`)
     httpServer.close()
     process.exit(0)
   })
 
   httpServer.listen(port, () => {
-    console.log(`robokit-cognitive-hub: (HTTP/ws/socket-io server) is ready and listening at port ${port}!`)
+    console.log(`RobokitCognitiveHub: (HTTP/ws/socket-io server) is ready and listening at port ${port}!`)
   })
 }
 
 process.on('uncaughtException', function (exception) {
-  console.error(exception);
+  const errorTimestamp = new Date().toLocaleString()
+  console.error(`RobokitCognitiveHub: [${errorTimestamp}] uncaughtException:`, exception);
+
 });
 
 process.on('unhandledRejection', (reason, p) => {
-  console.error("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+  const errorTimestamp = new Date().toLocaleString()
+  console.error(`RobokitCognitiveHub: [${errorTimestamp}] unhandledRejection at: Promise`, p, " reason: ", reason);
 });
 
 main().catch((error) => {
-  console.error('Detected an unrecoverable error. Stopping!')
+  const errorTimestamp = new Date().toLocaleString()
+  console.error(`RobokitCognitiveHub: [${errorTimestamp}] Detected an unrecoverable error. Stopping!`)
   console.error(error)
 })
