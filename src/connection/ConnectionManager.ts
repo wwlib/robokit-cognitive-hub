@@ -167,10 +167,17 @@ export default class ConnectionManager {
         }
     }
 
-    sendCommandToTarget(type: ConnectionType, command: RCSCommand, targetAccountId: string) {
+    sendCommandToTarget(type: ConnectionType, targetAccountId: string, command: RCSCommand) {
         const connection = this.getConnectionWithTypeAndAccountId(type, targetAccountId)
         if (connection) {
             connection.sendCommand(command)
+        }
+    }
+
+    emitEventToTarget(type: ConnectionType, targetAccountId: string, eventName: string, data?: any) {
+        const connection = this.getConnectionWithTypeAndAccountId(type, targetAccountId)
+        if (connection) {
+            connection.emitEvent(eventName, data)
         }
     }
 }

@@ -1,10 +1,11 @@
 import { Socket } from 'socket.io';
 import ConnectionManager from 'src/connection/ConnectionManager';
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
-import ASRSessionHandler, { AsrSessionHandlerCallbackType } from '../asr/ASRSessionHandler'
+import ASRSessionHandler, { ASRSessionHandlerCallbackType } from '../asr/ASRSessionHandler'
 import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
 import SkillsController, { SkillsControllerCallbackType } from 'src/skills/SkillsController';
 import SkillsManager, { SkillsManifest } from 'src/skills/SkillsManager';
+import TTSSessionHandler, { TTSSessionConfig, TTSSessionHandlerCallbackType } from 'src/tts/TTSSessionHandler';
 
 export enum ConnectionType {
     DEVICE = 'device',
@@ -42,6 +43,7 @@ export default class Connection {
     private _audioBytesFromQuota: number;
 
     private _asrSessionHandler: ASRSessionHandler | undefined
+    private _ttsSessionHandler: TTSSessionHandler | undefined
     private _skillsController: SkillsController | undefined
 
     constructor(type: ConnectionType, socket: Socket, accountId: string) {
@@ -186,27 +188,25 @@ export default class Connection {
         ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
     }
 
-    asrSessionHandlerCallback: AsrSessionHandlerCallbackType = (event: string, data: any) => {
+    asrSessionHandlerCallback: ASRSessionHandlerCallbackType = (event: string, data: any) => {
         // console.log(`asrSessionHandlerCallback`, event)
-        if (this._skillsController) {
-            switch (event) {
-                case 'asrSOS':
-                    this.onAsrSOS()
-                    this._skillsController.onAsrSOS()
-                    break;
-                case 'asrEOS':
-                    this.onAsrEOS()
-                    this._skillsController.onAsrEOS()
-                    break;
-                case 'asrResult':
-                    this.onAsrResult(data)
-                    this._skillsController.onAsrResult(data)
-                    break;
-                case 'asrEnded':
-                    this.onAsrEnded(data)
-                    this._skillsController.onAsrEnded(data)
-                    break;
-            }
+        switch (event) {
+            case 'asrSOS':
+                this.onAsrSOS()
+                this._skillsController?.onAsrSOS()
+                break;
+            case 'asrEOS':
+                this.onAsrEOS()
+                this._skillsController?.onAsrEOS()
+                break;
+            case 'asrResult':
+                this.onAsrResult(data)
+                this._skillsController?.onAsrResult(data)
+                break;
+            case 'asrEnded':
+                this.onAsrEnded(data)
+                this._skillsController?.onAsrEnded(data)
+                break;
         }
     }
 
@@ -243,6 +243,43 @@ export default class Connection {
         }
     }
 
+    // TTS
+
+    handleTTSCommand(command: RCSCommand) {
+        if (command.payload && command.payload.inputText, command.targetAccountId) {
+            this.startTTS(command.payload.inputText, command.targetAccountId)
+        } else {
+            console.log(`Connection: handleTTSCommand: inputText is undefined. Ignoring.`)
+        }
+    }
+
+    startTTS(inputText: string, targetAccountId: string) {
+        if (this._ttsSessionHandler) {
+            this._ttsSessionHandler.dispose()
+        }
+        // TODO: put this somewhere better
+        const ttsConfig: TTSSessionConfig = {
+            Microsoft: {
+                AzureSpeechSubscriptionKey: process.env.AZURE_SPEECH_SUBSCRIPTION_KEY || "<YOUR-AZURE-SUBSCRIPTION-KEY>",
+                AzureSpeechTokenEndpoint: process.env.AZURE_SPEECH_TOKEN_ENDPOINT || "https://azurespeechserviceeast.cognitiveservices.azure.com/sts/v1.0/issuetoken",
+            }
+        }
+        this._ttsSessionHandler = new TTSSessionHandler(this.ttsSessionHandlerCallback, ttsConfig, this._socketId, targetAccountId)
+        this._ttsSessionHandler.synthesizeStream(inputText)
+    }
+
+    ttsSessionHandlerCallback: TTSSessionHandlerCallbackType = (eventName: string, targetAccountId: string, data: any) => {
+        console.log(`ttsSessionHandlerCallback`, eventName, targetAccountId, data)
+        // send to Controller
+        if (this._socket && this._socket.connected) {
+            this._socket.emit(eventName, data)
+        }
+        // If this is a Controller connection send to targeted Device 
+        if (this._type === ConnectionType.CONTROLLER) {
+            ConnectionManager.getInstance().emitEventToTarget(ConnectionType.DEVICE, targetAccountId, eventName, data)
+        }
+    }
+
     // Photo
 
     onBase64Photo(base64PhotoData: string) {
@@ -263,17 +300,41 @@ export default class Connection {
 
     // SkillsController
 
-    skillsControllerCallback: SkillsControllerCallbackType = (event: string, data: any) => {
+    skillsControllerCallback: SkillsControllerCallbackType = (event: string, messageData: any) => {
         switch (event) {
             case 'init':
                 this.sendMessage({
                     source: 'RCH:Connection',
                     event: 'skillsControllerInit',
-                    data: data,
+                    data: messageData,
                 })
                 break;
             case 'reply': // TODO: OK for now, but should send a command rather than a message
-                this.sendMessage(data)
+                this.sendMessage(messageData)
+                // TODO: generalize this
+                // {
+                //     source: 'CS:RCS', event: 'reply', data: {
+                //         reply: `I'm sorry. I don't yet know how to help with: ${messageData.text}`
+                //     }
+                // }
+                // For now, if the message is from the Echo skill then generate a server-initiated TTS response
+                if (messageData.source === 'RCH:EchoSkillSessionHandler' && messageData.event === 'reply' && messageData.data && messageData.data.reply) {
+                    const command: RCSCommand = {
+                        id: 'tbd',
+                        source: 'RCH:Connection',
+                        targetAccountId: this.accountId,
+                        type: RCSCommandType.command,
+                        name: 'tts',
+                        payload: {
+                            inputText: messageData.data.reply,
+                            status: 'REQUESTED',
+                            requestId: 'tbd'
+                        },
+                        createdAtTime: new Date().getTime()
+                    }
+                    this.sendCommand(command) // let the Device know that TTS is coming
+                    this.handleTTSCommand(command) // make a TTS request for the targeted Device
+                }
         }
     }
 

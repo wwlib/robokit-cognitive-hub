@@ -58,25 +58,32 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
 
         socket.on('command', (command: RCSCommand) => {
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM, command.type)
-            if (command.type === 'hubCommand' && command.name === 'subscribe' && command.payload && command.payload.connectionType === 'device' && command.payload.accountId) {
+            if (command.type === 'hubCommand') {
                 if (process.env.DEBUG === 'true') {
-                    console.log(`DEBUG: ControllerServer: on hub command:`, socket.id, socket.data.accountId, command)
+                    console.log(`DEBUG: ControllerServer: on hub command:`, socket.id, socket.data?.accountId, command)
                 }
-                ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
-                command = {
-                    id: 'tbd',
-                    source: 'RCH:ControllerServer',
-                    targetAccountId: command.payload.accountId, // accountId of targeted device/app
-                    type: RCSCommandType.hubCommand,
-                    message: `subscribed to ${command.payload.accountId}`,
-                    name: RCSCommandName.notification, // added string to allow flexibility during development
-                    payload: {
-                        event: 'subscribed-to',
-                        targetAccountId: command.payload.accountId,
-                    },
-                    createdAtTime: new Date().getTime() // server time is synchronized time
+                if (command.name === 'subscribe' && command.payload && command.payload.connectionType === 'device' && command.payload.accountId) {
+                    
+                    ConnectionManager.getInstance().subscribeToConnection(ConnectionType.DEVICE, command.payload.accountId, socket)
+                    command = {
+                        id: 'tbd',
+                        source: 'RCH:ControllerServer',
+                        targetAccountId: command.payload.accountId, // accountId of targeted device/app
+                        type: RCSCommandType.hubCommand,
+                        message: `subscribed to ${command.payload.accountId}`,
+                        name: RCSCommandName.notification, // added string to allow flexibility during development
+                        payload: {
+                            event: 'subscribed-to',
+                            targetAccountId: command.payload.accountId,
+                        },
+                        createdAtTime: new Date().getTime() // server time is synchronized time
+                    }
+                    socket.emit('command', command) // ACK
+                } else if (command.name === 'tts') {
+                    if (connection) {
+                        connection.handleTTSCommand(command)
+                    }
                 }
-                socket.emit('command', command) // ACK
             } else if (command.type === RCSCommandType.sync) {
                 if (process.env.DEBUG_CLOCK_SYNC === 'true') {
                     console.log(`DEBUG_CLOCK_SYNC: ControllerServer: on sync command:`, socket.id, socket.data.accountId, command)
@@ -97,7 +104,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
                 // route command to device
                 if (command && command.targetAccountId) {
                     ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO, command.type)
-                    ConnectionManager.getInstance().sendCommandToTarget(ConnectionType.DEVICE, command, command.targetAccountId)
+                    ConnectionManager.getInstance().sendCommandToTarget(ConnectionType.DEVICE, command.targetAccountId, command)
                 }
             }
         })

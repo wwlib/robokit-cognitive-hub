@@ -50,7 +50,16 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
 
         socket.on('command', (command: RCSCommand) => {
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM, command.type)
-            if (command.type === RCSCommandType.sync) {
+            if (command.type === 'hubCommand') {
+                if (process.env.DEBUG === 'true') {
+                    console.log(`DEBUG: DeviceServer: on hub command:`, socket.id, socket.data?.accountId, command)
+                }
+                if (command.name === 'tts') {
+                    if (connection) {
+                        connection.handleTTSCommand(command)
+                    }
+                }
+            } else if (command.type === RCSCommandType.sync) {
                 if (process.env.DEBUG_CLOCK_SYNC === 'true') {
                     console.log(`DEBUG_CLOCK_SYNC: DeviceServer: on sync command:`, socket.id, socket.data.accountId, command)
                 }

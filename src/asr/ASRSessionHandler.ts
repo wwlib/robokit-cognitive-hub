@@ -7,17 +7,17 @@ import {
 
 const WavFileWriter = require('wav').FileWriter;
 
-export type AsrSessionHandlerCallbackType = (event: string, data?: any) => void
+export type ASRSessionHandlerCallbackType = (event: string, data?: any) => void
 
 export default class ASRSessionHandler extends EventEmitter {
 
-    private _callback: AsrSessionHandlerCallbackType
+    private _callback: ASRSessionHandlerCallbackType
     private _logger: Logger
     private _asrConfig: ASRStreamingSessionConfig | undefined
     private _asrStreamingSessionWrapper: ASRStreamingSessionWrapper | undefined
     private _outputFileStream: any
 
-    constructor(callback: AsrSessionHandlerCallbackType, asrConfig: ASRStreamingSessionConfig) {
+    constructor(callback: ASRSessionHandlerCallbackType, asrConfig: ASRStreamingSessionConfig) {
         super()
         this._callback = callback
         this._asrConfig = asrConfig
