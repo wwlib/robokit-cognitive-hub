@@ -6,6 +6,7 @@ import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
 import SkillsController, { SkillsControllerCallbackType } from 'src/skills/SkillsController';
 import SkillsManager, { SkillsManifest } from 'src/skills/SkillsManager';
 import TTSSessionHandler, { TTSSessionConfig, TTSSessionHandlerCallbackType } from 'src/tts/TTSSessionHandler';
+import NLUSessionHandler, { NLUSessionConfig, NLUSessionHandlerCallbackType } from 'src/nlu/NluSessionHandler';
 
 export enum ConnectionType {
     DEVICE = 'device',
@@ -28,6 +29,7 @@ export default class Connection {
     private _socket: Socket | undefined;
     private _socketId: string;
     private _accountId: string;
+    private _password: string; // TODO: needed to login to skills on behalf of the device. Should probably share acces_token, refresh_token instead!!
     private _syncOffset: number;
     private _lastSyncTimestamp: number;
 
@@ -44,13 +46,16 @@ export default class Connection {
 
     private _asrSessionHandler: ASRSessionHandler | undefined
     private _ttsSessionHandler: TTSSessionHandler | undefined
+    private _nluSessionHandler: NLUSessionHandler | undefined
+    private _nluSessionId: string = ''
     private _skillsController: SkillsController | undefined
 
-    constructor(type: ConnectionType, socket: Socket, accountId: string) {
+    constructor(type: ConnectionType, socket: Socket, accountId: string, password: string = 'use-token-instead') {
         this._type = type
         this._socket = socket
         this._socketId = socket.id
         this._accountId = accountId
+        this._password = password
         this._syncOffset = 0
         this._lastSyncTimestamp = 0
         this._commandCountFrom = 0
@@ -72,7 +77,7 @@ export default class Connection {
         if (this._type === ConnectionType.DEVICE) {
             SkillsManager.getInstance().getSkillsManifest()
                 .then((skillsManifest: SkillsManifest) => {
-                    this._skillsController = new SkillsController(this.skillsControllerCallback, { skillsManifest })
+                    this._skillsController = new SkillsController(this.skillsControllerCallback, { skillsManifest }, this._accountId, this._password)
                 })
         }
     }
@@ -172,14 +177,14 @@ export default class Connection {
         this.emitEvent('asrResult', data)
     }
 
-    onAsrEnded(data: any) {
-        this.emitEvent('asrEnded', data)
+    onAsrEnd(data: any) {
+        this.emitEvent('asrEnd', data)
         const eventCommand: RCSCommand = {
             id: 'tbd',
             source: 'RCH:Connection',
             targetAccountId: this.accountId,
             type: RCSCommandType.event,
-            name: RCSCommandName.asrEnded,
+            name: RCSCommandName.asrEnd,
             createdAtTime: new Date().getTime(), // NOTE: hub service time IS synchronozed time
             payload: {
                 data
@@ -189,7 +194,7 @@ export default class Connection {
     }
 
     asrSessionHandlerCallback: ASRSessionHandlerCallbackType = (event: string, data: any) => {
-        // console.log(`asrSessionHandlerCallback`, event)
+        // console.log(`Connection: asrSessionHandlerCallback`, event)
         switch (event) {
             case 'asrSOS':
                 this.onAsrSOS()
@@ -203,9 +208,10 @@ export default class Connection {
                 this.onAsrResult(data)
                 this._skillsController?.onAsrResult(data)
                 break;
-            case 'asrEnded':
-                this.onAsrEnded(data)
-                this._skillsController?.onAsrEnded(data)
+            case 'asrEnd':
+                this.onAsrEnd(data)
+                this._skillsController?.onAsrEnd(data)
+                this.startNLU(data.text, this._accountId)
                 break;
         }
     }
@@ -243,6 +249,53 @@ export default class Connection {
         }
     }
 
+    // NLU
+
+    handleNLUCommand(command: RCSCommand) {
+        if (command.payload && command.payload.inputText, command.targetAccountId) {
+            this.startNLU(command.payload.inputText, command.targetAccountId)
+        } else {
+            console.log(`Connection: handleNLUCommand: inputText is undefined. Ignoring.`)
+        }
+    }
+
+    startNLU(inputText: string, targetAccountId: string) {
+        // console.log('Connection: StartNLU:', inputText, targetAccountId)
+        if (this._nluSessionHandler) {
+            this._nluSessionHandler.dispose()
+        }
+        // TODO: put this somewhere better
+        const nluConfig: NLUSessionConfig = {
+            Lima: {
+                Url: process.env.LIMA_URL || 'http://localhost:8084',
+                AuthUrl: process.env.LIMA_AUTH_URL || 'http://localhost:8084/auth',
+                AccountId: process.env.LIMA_ACCOUNT_ID || 'hub-default-account-id',
+                Password: process.env.LIMA_PASSWORD || 'hub-default-password',
+                SessionId: this._nluSessionId,
+            }
+        }
+        this._nluSessionHandler = new NLUSessionHandler(this.nluSessionHandlerCallback, nluConfig, this._socketId, targetAccountId)
+        this._nluSessionHandler.call(inputText)
+    }
+
+    nluSessionHandlerCallback: NLUSessionHandlerCallbackType = (eventName: string, targetAccountId: string, data: any) => {
+        // console.log(`Connection: nluSessionHandlerCallback`, eventName, targetAccountId, data)
+        // send to Controller
+        if (this._socket && this._socket.connected) {
+            this._socket.emit(eventName, data)
+        }
+        // If this is a Controller connection (i.e. a controller-initiated request) forward event to targeted Device 
+        if (this._type === ConnectionType.CONTROLLER) {
+            ConnectionManager.getInstance().emitEventToTarget(ConnectionType.DEVICE, targetAccountId, eventName, data)
+        }
+        if (eventName === 'nluEnd') {
+            if (data.response && data.response.sessionId) {
+                this._nluSessionId = data.response.sessionId
+            }
+            this._skillsController?.onNluEnd(data)
+        }
+    }
+
     // TTS
 
     handleTTSCommand(command: RCSCommand) {
@@ -269,12 +322,12 @@ export default class Connection {
     }
 
     ttsSessionHandlerCallback: TTSSessionHandlerCallbackType = (eventName: string, targetAccountId: string, data: any) => {
-        console.log(`ttsSessionHandlerCallback`, eventName, targetAccountId, data)
+        // console.log(`Connection: ttsSessionHandlerCallback`, eventName, targetAccountId, data)
         // send to Controller
         if (this._socket && this._socket.connected) {
             this._socket.emit(eventName, data)
         }
-        // If this is a Controller connection send to targeted Device 
+        // If this is a Controller connection (i.e. a controller-initiated request) forward event to targeted Device 
         if (this._type === ConnectionType.CONTROLLER) {
             ConnectionManager.getInstance().emitEventToTarget(ConnectionType.DEVICE, targetAccountId, eventName, data)
         }

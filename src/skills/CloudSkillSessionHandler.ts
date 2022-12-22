@@ -6,9 +6,9 @@ const { io } = require("socket.io-client");
 export default class CloudSkillSessionHandler extends AbstractSkillSessionHandler {
 
     private _socket: any
-
-    constructor(callback: SkillSessionHandlerCallbackType, skillData: any) {
-        super(callback, skillData)
+    
+    constructor(callback: SkillSessionHandlerCallbackType, skillData: any, deviceAccountId: string, devicePassword: string) {
+        super(callback, skillData, deviceAccountId, devicePassword)
         this.init()
     }
 
@@ -16,14 +16,14 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
         if (this._skillData && this._skillData.serviceData) {
             const url: string = this._skillData.serviceData.url
             const authUrl: string = this._skillData.serviceData.authUrl
-            const accountId: string = this._skillData.serviceData.accountId
-            const password: string = this._skillData.serviceData.password
+            const accountId: string = this._deviceAccountId
+            const password: string = this._devicePassword
             if (authUrl && accountId && password) {
                 this.getToken(authUrl, accountId, password)
                     .then((token: string) => {
                         try {
                             this.connect(url, token) // TODO: error handling
-                        } catch(error) {
+                        } catch (error) {
                             console.error(`CloudSkillSessionHandler: error connecting to skill socket.`, error)
                         }
                     })
@@ -52,7 +52,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
                 })
                 .catch(function (error: any) {
                     // TODO: remove log & throw
-                    console.error('CloudSkilllSessionHandler: getToken error:',error);
+                    console.error('CloudSkilllSessionHandler: getToken error:', error);
                     reject();
                 });
 
@@ -101,8 +101,12 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
 
     onEvent(event: any) {
         switch (event.event) {
-            case 'asrEnded':
-                this._socket.emit('message', event.data)
+            case 'asrEnd':
+                this._socket.emit('asrEnd', event.data)
+                break;
+            case 'nluEnd':
+                console.log(`CloudSkillSessionHandler: onNluEnd:`, event)
+                this._socket.emit('nluEnd', event.data)
                 break;
         }
     }

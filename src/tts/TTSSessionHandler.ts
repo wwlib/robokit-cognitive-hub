@@ -52,7 +52,7 @@ export default class TTSSessionHandler extends EventEmitter {
             if (this._callback) this._callback('ttsAudioStart', this._targetAccountId, { inputText })
 
             audioStream.on('data', (data: any) => {
-                console.log(`TTSSessionHandler: synthesizeStream: data:`, data);
+                // console.log(`TTSSessionHandler: synthesizeStream: data:`, data);
                 if (this._callback) this._callback('ttsAudio', this._targetAccountId, data)
             });
             audioStream.on('end', () => {

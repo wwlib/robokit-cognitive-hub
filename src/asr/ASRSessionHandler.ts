@@ -55,7 +55,7 @@ export default class ASRSessionHandler extends EventEmitter {
             })
             this._asrStreamingSessionWrapper.on('SESSION_ENDED', (result) => {
                 this._logger.debug('wrapper', 'SESSION_ENDED', result)
-                this._callback('asrEnded', result)
+                this._callback('asrEnd', result)
                 if (this._asrStreamingSessionWrapper) {
                     this._asrStreamingSessionWrapper.dispose()
                     this._asrStreamingSessionWrapper = undefined

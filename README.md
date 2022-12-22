@@ -98,7 +98,7 @@ asrSOS
 asrResult { text: 'do you like', confidence: 0.5 }
 asrResult { text: 'do you like mac and', confidence: 0.5 }
 asrAudio done
-asrEnded { text: 'Do you like Mac and cheese?', confidence: 0.96449 }
+asrEnd { text: 'Do you like Mac and cheese?', confidence: 0.96449 }
 ```
 
 Typing `quit` terminates the cli.

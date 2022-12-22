@@ -15,10 +15,14 @@ export default class SkillsController {
 
     private _callback: SkillsControllerCallbackType
     private _skillSessionHandlers: Map<string, AbstractSkillSessionHandler>
+    private _deviceAccountId: string
+    private _devicePassword: string
 
-    constructor(callback: SkillsControllerCallbackType, config: SkillsControllerConfig) {
+    constructor(callback: SkillsControllerCallbackType, config: SkillsControllerConfig, deviceAccountId: string, devicePassword: string) {
         this._callback = callback
         this._skillSessionHandlers = new Map<string, AbstractSkillSessionHandler>()
+        this._deviceAccountId = deviceAccountId
+        this._devicePassword = devicePassword
         this.init(config)
     }
 
@@ -30,11 +34,11 @@ export default class SkillsController {
                 console.log(`SkillsController: init:`, skillData)
                 let handler: AbstractSkillSessionHandler | undefined = undefined
                 if (skillData.id === 'echo') {
-                    handler = new EchoSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
+                    handler = new EchoSkillSessionHandler(this.skillSessionHandlerCallback, skillData, this._deviceAccountId, this._devicePassword)
                 } else if (skillData.id === 'clock') {
-                    handler = new ClockSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
+                    handler = new ClockSkillSessionHandler(this.skillSessionHandlerCallback, skillData, this._deviceAccountId, this._devicePassword)
                 } else {
-                    handler = new CloudSkillSessionHandler(this.skillSessionHandlerCallback, skillData)
+                    handler = new CloudSkillSessionHandler(this.skillSessionHandlerCallback, skillData, this._deviceAccountId, this._devicePassword)
                 }
                 if (handler) {
                     this._skillSessionHandlers.set(skillData.id, handler)
@@ -75,9 +79,18 @@ export default class SkillsController {
         })
     }
 
-    onAsrEnded(data: any) {
+    onAsrEnd(data: any) {
         this.broadcastEventToSkills({
-            event: 'asrEnded',
+            event: 'asrEnd',
+            data
+        })
+    }
+
+    // NLU
+
+    onNluEnd(data: any) {
+        this.broadcastEventToSkills({
+            event: 'nluEnd',
             data
         })
     }

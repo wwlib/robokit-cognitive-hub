@@ -79,7 +79,7 @@ export default class ConnectionManager {
         let connection: Connection | undefined = undefined
         const connections = this.getConnectionsWithType(type)
         if (connections && socket && socket.id) {
-            connection = new Connection(type, socket, accountId)
+            connection = new Connection(type, socket, accountId, 'use-token-instead') // TODO: pass access_token & refresh_token for skill logins
             connections.set(socket.id, connection)
             // update _deviceConnectionsByAccountId
             if (type === ConnectionType.DEVICE && accountId) {

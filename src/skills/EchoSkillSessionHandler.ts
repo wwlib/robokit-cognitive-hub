@@ -2,13 +2,13 @@ import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './
 
 export default class EchoSkillSessionHandler extends AbstractSkillSessionHandler {
 
-    constructor(callback: SkillSessionHandlerCallbackType, skillData: any) {
-        super(callback, skillData)
+    constructor(callback: SkillSessionHandlerCallbackType, skillData: any, deviceAccountId: string, devicePassword: string) {
+        super(callback, skillData, deviceAccountId, devicePassword)
     }
 
     onEvent(event: any) {
         switch (event.event) {
-            case 'asrEnded':
+            case 'asrEnd':
                 this._callback('reply', {
                     source: 'RCH:EchoSkillSessionHandler',
                     event: 'reply',
@@ -16,6 +16,9 @@ export default class EchoSkillSessionHandler extends AbstractSkillSessionHandler
                     skillPriority: this._skillPriority,
                     data: { reply: `you said, ${event.data.text}` }
                 })
+                break;
+            case 'nluEnd':
+                console.log(`EchoSkillSessionHandler: onNluEnd:`, event)
                 break;
         }
     }

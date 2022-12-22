@@ -4,8 +4,8 @@ const timeToText = require('convert-time-to-text');
 
 export default class ClockSkillSessionHandler extends AbstractSkillSessionHandler {
 
-    constructor(callback: SkillSessionHandlerCallbackType, skillData: any) {
-        super(callback, skillData)
+    constructor(callback: SkillSessionHandlerCallbackType, skillData: any, deviceAccountId: string, devicePassword: string) {
+        super(callback, skillData, deviceAccountId, devicePassword)
     }
 
     getTimeReply(asrText: string): any {
@@ -30,11 +30,14 @@ export default class ClockSkillSessionHandler extends AbstractSkillSessionHandle
     onEvent(event: any) {
         let reply: any
         switch (event.event) {
-            case 'asrEnded':
+            case 'asrEnd':
                 reply = this.getTimeReply(event.data.text)
                 if (reply) {
                     this._callback('reply', reply)
                 }
+                break;
+            case 'nluEnd':
+                console.log(`ClockSkillSessionHandler: onNluEnd:`, event)
                 break;
         }
     }
