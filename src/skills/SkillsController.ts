@@ -1,8 +1,16 @@
-import Connection from 'src/connection/Connection';
-import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler';
-import ClockSkillSessionHandler from './ClockSkillSessionHandler';
-import CloudSkillSessionHandler from './CloudSkillSessionHandler';
-import EchoSkillSessionHandler from './EchoSkillSessionHandler';
+/**
+ * SkillsController manages the Skill instances (SkillSessionHandler instances) that are associated with a given Connection.
+ *
+ * @module
+ */
+
+// TODO: generalize this to handle a wide range of skill types as defined in the cognitive hub's skills-manifest.json.
+
+import { Connection } from 'src/connection/Connection';
+import { AbstractSkillSessionHandler, SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
+import { ClockSkillSessionHandler } from './ClockSkillSessionHandler';
+import { CloudSkillSessionHandler } from './CloudSkillSessionHandler';
+import { EchoSkillSessionHandler } from './EchoSkillSessionHandler';
 import { SkillsManifest } from './SkillsManager';
 
 export type SkillsControllerCallbackType = (event: string, data?: any) => void
@@ -11,7 +19,7 @@ export interface SkillsControllerConfig {
     skillsManifest: SkillsManifest
 }
 
-export default class SkillsController {
+export class SkillsController {
 
     private _callback: SkillsControllerCallbackType
     private _skillSessionHandlers: Map<string, AbstractSkillSessionHandler>
@@ -26,6 +34,8 @@ export default class SkillsController {
         this.init(config)
     }
 
+
+    /** Instantiate the skills(SkillSessionHandler instances) as defined in the cognitive hub's skills-manifest.json */
     init(config: SkillsControllerConfig) {
         if (config.skillsManifest.skills) {
             const skillsActivated: any = {}
@@ -97,6 +107,10 @@ export default class SkillsController {
 
     // SkillSessionHandler callback
 
+    /** 
+     * skillSessionHandlerCallback is passed to SkillSessionHandler instances and is used to handle
+     * responses from skills.
+     */
     skillSessionHandlerCallback: SkillSessionHandlerCallbackType = (event: string, data: any) => {
         switch (event) {
             case 'reply':

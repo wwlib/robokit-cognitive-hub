@@ -1,3 +1,10 @@
+/** 
+ * WsExampleHandlers includes two example handlers for ws socket messages - for reference.
+ * Note: The cognitive hub uses socket.io rather than ws
+ * 
+ * @module
+ */
+
 import { IncomingMessage } from 'http'
 import ws, { WebSocketServer } from 'ws'
 

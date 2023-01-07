@@ -1,3 +1,9 @@
+/**
+ * SkillsManager provides access to global skill-related data like the skills manifest.
+ *
+ * @module
+ */
+
 export interface SkillLaunchCriteria {
     asr?: string
     nlu?: string
@@ -21,7 +27,7 @@ export interface SkillsManifest {
     }
 }
 
-export default class SkillsManager {
+export class SkillsManager {
 
     private static instance: SkillsManager
 
@@ -37,7 +43,8 @@ export default class SkillsManager {
         return SkillsManager.instance
     }
 
-    // TODO: read manifest from a file, i.e. skills-manifest.json
+    // TODO: Read the manifest from a file, i.e. skills-manifest.json
+    // TODO: Need to define skill data. Make availability of skills based on account permissions?
     async getSkillsManifest(): Promise<SkillsManifest> {
         const data = {
             skills: {
@@ -58,7 +65,8 @@ export default class SkillsManager {
                 "chitchat": {
                     "id": "chitchat",
                     "launchCriteria": {
-                        "asr": "*"
+                        "asr": "*",
+                        "nlu": "*"
                     },
                     "priority": 1,
                     "serviceData": {

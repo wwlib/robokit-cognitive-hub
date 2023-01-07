@@ -15,7 +15,8 @@
     "test": "echo TODO",
     "test:ci": "echo TODO",
     "clean": "rm -rf dist node_modules",
-    "docs": "npx typedoc --out docs/typedoc --entryPointStrategy expand ./src",
+    "docs:build": "npx typedoc --out docs/typedoc --entryPointStrategy expand ./src && mkdir -p docs/typedoc/docs/media && cp docs/media/robokit-cloud-architecture-simple.png docs/typedoc/docs/media/robokit-cloud-architecture-simple.png",
+    "docs:serve": "cd ./docs/typedoc && serve .",
     "copy-hub-controller": "mkdir -p hub-controller-app && cp -r ../robokit-hub-controller/build hub-controller-app",
     "docker:build": "docker build -t robokit-cognitive-hub .",
     "docker:run": "docker run -it --rm -p 8082:8082 --env-file ./.env robokit-cognitive-hub"

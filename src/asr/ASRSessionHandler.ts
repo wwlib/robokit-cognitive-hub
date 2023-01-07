@@ -1,3 +1,9 @@
+/**
+ * ASRSessionHandler manages the streaming of audio to an ASR/TTS cognitive service (i.e. Azure STT).
+ *
+ * @module
+ */
+
 import { EventEmitter } from 'events';
 import {
     ASRStreamingSessionConfig,
@@ -9,7 +15,7 @@ const WavFileWriter = require('wav').FileWriter;
 
 export type ASRSessionHandlerCallbackType = (event: string, data?: any) => void
 
-export default class ASRSessionHandler extends EventEmitter {
+export class ASRSessionHandler extends EventEmitter {
 
     private _callback: ASRSessionHandlerCallbackType
     private _logger: Logger
@@ -34,6 +40,10 @@ export default class ASRSessionHandler extends EventEmitter {
         }
     }
 
+    /**
+     * Takes a chunk of audio data and passes it to the ASrStreamingSessionWrapper which forwards it to the ASR/STT service.
+     * @param data Audio data to be sent to the ASR/TTS service
+     */
     provideAudio(data: Buffer) {
         if (!this._asrConfig) {
             throw new Error('asrConfig must be defined.')
@@ -64,11 +74,14 @@ export default class ASRSessionHandler extends EventEmitter {
             this._asrStreamingSessionWrapper.on('ERROR', (error) => this._logger.debug('wrapper', 'ERROR', error))
             this._asrStreamingSessionWrapper.start()
 
-            this._outputFileStream = new WavFileWriter(`asrSession-out.wav`, {
-                sampleRate: 16000,
-                bitDepth: 16,
-                channels: 1
-            });
+            /** in DEBUG mode, audio is output to `asrSession-out.wav` */
+            if (process.env.DEBUG === 'true') {
+                this._outputFileStream = new WavFileWriter(`asrSession-out.wav`, {
+                    sampleRate: 16000,
+                    bitDepth: 16,
+                    channels: 1
+                });
+            }
         } else {
             this._asrStreamingSessionWrapper.provideAudio(data)
             if (this._outputFileStream) {

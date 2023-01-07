@@ -1,15 +1,27 @@
 # robokit-cognitive-hub
 
-A cognitive hub (microservice) for developing robokit applications. Features include:
-- robokit device socket connectivity (socket-io)
-- clock sync between the service and connected devices
-- ASR/STT audio streaming to service with real time event handling (SoS, EoS, incremental results)
-- express route handling
-- get/post REST api routes
-- WebSocket api routes (optional)
-- http admin UI routes
-- JWT auth
+robokit-cognitive-hub serves as a cloud endpoint for Conversational AI Devices, i.e. robots.
+
+robokit-cognitive-hub is a lightweight microservice with the essential features needed to develop robust voice-driven applications. 
+
+Features include:
+- Express route handling
+- GET/POST REST api routes
+- HTTP admin UI pages
+- JWT auth (example mock implementation)
 - docker support
+- Socket.io connectivity for Devices, Controllers and Apps
+- WebSocket api routes (optional)
+- Clock sync between the service and connected devices - enabling syncronized, multi-device/robot applications (i.e. show control)
+- Audio streaming/routing to ASR/STT services with real time event handling (SoS, EoS, incremental results) - i.e. Azure Speech/STT
+- Event routing to/from NLU services - i.e. Azure LUIS & CLU
+- Audio streaming from TTS services - i.e. Azure Custom Voice
+- Routing of events to/from Skill/Application microservices
+- Remote control of Devices by Contoller clients - i.e. human-in-the-loop Woz (Wizard of Oz) Controllers
+- Routing of events to/from external App clients for integration with existing applications - i.e. realtime integration with game services
+
+
+
 
 ### medium article
 
@@ -17,6 +29,10 @@ TBD
 
 For details about the project structure, see: [A Nodejs Microservice Template](https://medium.com/@andrew.rapo/a-nodejs-microservice-template-36f080fe1418)
 
+
+### cloud architecture
+
+![robokit-cognitive-hub architecture](./docs/media/robokit-cloud-architecture-simple.png)
 
 ### install
 
@@ -30,6 +46,15 @@ For details about the project structure, see: [A Nodejs Microservice Template](h
 
 `npm run start`
 
+### docs
+
+```
+npm run docs:serve
+
+(when code changes)
+
+npm run docs:build
+```
 
 ### docker
 
@@ -66,16 +91,25 @@ curl --location --request POST 'http://localhost:8082/auth' \
 {"message":"Logged in successfully.","access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJyb2JvdDEiLCJhdXRoIjp7InBlcm1pc3Npb25zIjpbeyJzY29wZXMiOlsicmVhZCIsImFkbWluIl0sInJlc291cmNlIjoiZXhhbXBsZSJ9XX0sImlhdCI6MTY1NjgxODY3MSwiZXhwIjoxNjU2ODE4NzMxfQ.TB_UUwFkc0fQLYi1q80hedBMvR7h4EIHzTSIoVTKOeA","refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJyb2JvdDEiLCJpYXQiOjE2NTY4MTg2NzEsImV4cCI6MTY1NjkwNTA3MX0.VDMlgUPiP-0r9EJ4_Q93gqufPBCmqIYXQ5PCr9UsJ8s","account_id":"robot1"}
 ```
 
-### http - dashboard
+### http - example Controller app
 
-http://localhost:8082/
+http://localhost:8082
 
+### http - example dashboard
 
-### cli socket client (REPL)
+http://localhost:8082/dashboard
+
+### http - example console
+
+http://localhost:8082/console
+
+### cli socket validation client (REPL)
+
+Used to test and validate the server.
 
 ```
 cd tools
-node socket-cli.js
+node socket-cli-device.js
 ```
 
 Note: The socket client will authenticate using the credentials in the `tools/.env` file.

@@ -1,12 +1,19 @@
+/** 
+ * Connection manages a socket.io connection with a client Device (i.e. robot), Controller (TODO: or App)
+ * A new Connection is instantiated whenever a client connects to the cognitive hub via SocketIoDeviceServer, SocketIoControllerServer, (TODO: or SocketIoAppServer)
+ * 
+ * @module
+ */
+
 import { Socket } from 'socket.io';
-import ConnectionManager from 'src/connection/ConnectionManager';
+import { ConnectionManager } from 'src/connection/ConnectionManager';
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
-import ASRSessionHandler, { ASRSessionHandlerCallbackType } from '../asr/ASRSessionHandler'
+import { ASRSessionHandler, ASRSessionHandlerCallbackType } from '../asr/ASRSessionHandler'
 import { ASRStreamingSessionConfig } from 'cognitiveserviceslib'
-import SkillsController, { SkillsControllerCallbackType } from 'src/skills/SkillsController';
-import SkillsManager, { SkillsManifest } from 'src/skills/SkillsManager';
-import TTSSessionHandler, { TTSSessionConfig, TTSSessionHandlerCallbackType } from 'src/tts/TTSSessionHandler';
-import NLUSessionHandler, { NLUSessionConfig, NLUSessionHandlerCallbackType } from 'src/nlu/NluSessionHandler';
+import { SkillsController, SkillsControllerCallbackType } from 'src/skills/SkillsController';
+import { SkillsManager, SkillsManifest } from 'src/skills/SkillsManager';
+import { TTSSessionHandler, TTSSessionConfig, TTSSessionHandlerCallbackType } from 'src/tts/TTSSessionHandler';
+import { NLUSessionHandler, NLUSessionConfig, NLUSessionHandlerCallbackType } from 'src/nlu/NluSessionHandler';
 
 export enum ConnectionType {
     DEVICE = 'device',
@@ -14,7 +21,8 @@ export enum ConnectionType {
     CONTROLLER = 'controller',
 }
 
-export enum ConnectionEventType {
+// TODO: should be in/out rather than from/to - or something even better
+export enum ConnectionAnalyticsEventType {
     COMMAND_FROM = 'command_from',
     COMMAND_TO = 'command_to',
     MESSAGE_FROM = 'message_from',
@@ -23,13 +31,14 @@ export enum ConnectionEventType {
 }
 
 
-export default class Connection {
+export class Connection {
 
     private _type: ConnectionType;
     private _socket: Socket | undefined;
     private _socketId: string;
     private _accountId: string;
     private _password: string; // TODO: needed to login to skills on behalf of the device. Should probably share acces_token, refresh_token instead!!
+    /** Time delta in milliseconds between the server clock and the client's clock */
     private _syncOffset: number;
     private _lastSyncTimestamp: number;
 
@@ -71,6 +80,9 @@ export default class Connection {
         this.init()
     }
 
+    /**
+     * Initialize the controller. For Device (i.e. robot) controllers, also instantiate a SkillsController
+     */
     init() {
         // only Device connections have skill controllers
         // TODO: create ControllerConnection vs DeviceConnection classes
@@ -94,6 +106,7 @@ export default class Connection {
         return this._syncOffset
     }
 
+    /** Return a string description of the Connection state for use in the Dashboard view */
     toString(): string {
         const syncOffset = Math.round(this._syncOffset * 1000) / 1000
         const commandCountFromByType: string = JSON.stringify(this._commandCountFromByType)
@@ -114,9 +127,10 @@ export default class Connection {
         this.emitEvent('command', command)
     }
 
-    onAnalyticsEvent(eventType: ConnectionEventType, data: string | number) {
+    /** Compile analytics data for use in the Dashboard view */
+    onAnalyticsEvent(eventType: ConnectionAnalyticsEventType, data: string | number) {
         switch (eventType) {
-            case ConnectionEventType.COMMAND_FROM:
+            case ConnectionAnalyticsEventType.COMMAND_FROM:
                 this._commandCountFrom += 1
                 if (typeof data === 'string') {
                     if (!this._commandCountFromByType[data]) {
@@ -126,27 +140,29 @@ export default class Connection {
                     }
                 }
                 break;
-            case ConnectionEventType.COMMAND_TO:
+            case ConnectionAnalyticsEventType.COMMAND_TO:
                 this._commandCountTo += 1
                 break;
-            case ConnectionEventType.MESSAGE_FROM:
+            case ConnectionAnalyticsEventType.MESSAGE_FROM:
                 this._messageCountFrom += 1
                 break;
-            case ConnectionEventType.MESSAGE_TO:
+            case ConnectionAnalyticsEventType.MESSAGE_TO:
                 this._messageCountTo += 1
                 break;
-            case ConnectionEventType.AUDIO_BYTES_FROM:
+            case ConnectionAnalyticsEventType.AUDIO_BYTES_FROM:
                 this._audioBytesFrom += +data
                 break;
         }
     }
 
+    /** Update the client clock time offset */
     onSyncOffset(offset: number) {
         this._syncOffset = offset
     }
 
     // AsrSessionHandler
 
+    /** Handle ASR Start of Speech */
     onAsrSOS() {
         this.emitEvent('asrSOS')
         const eventCommand: RCSCommand = {
@@ -160,6 +176,7 @@ export default class Connection {
         ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
     }
 
+    /** Handle ASR End of Speech */
     onAsrEOS() {
         this.emitEvent('asrEOS')
         const eventCommand: RCSCommand = {
@@ -173,10 +190,12 @@ export default class Connection {
         ConnectionManager.getInstance().broadcastDeviceCommandToSubscriptionsWithAccountId(this.accountId, eventCommand)
     }
 
+    /** Handle ASR Result */
     onAsrResult(data: any) {
         this.emitEvent('asrResult', data)
     }
 
+    /** Handle ASR End */
     onAsrEnd(data: any) {
         this.emitEvent('asrEnd', data)
         const eventCommand: RCSCommand = {
@@ -216,6 +235,7 @@ export default class Connection {
         }
     }
 
+    /** Start an ASR session - triggered when audio is received by a socket server and forwarded to the associated Connection */
     startAudio() {
         if (this._asrSessionHandler) {
             this._asrSessionHandler.dispose()
@@ -251,6 +271,7 @@ export default class Connection {
 
     // NLU
 
+    /** Forward an NLU command request to an NLU cognitive service */
     handleNLUCommand(command: RCSCommand) {
         if (command.payload && command.payload.inputText, command.targetAccountId) {
             this.startNLU(command.payload.inputText, command.targetAccountId)
@@ -335,6 +356,7 @@ export default class Connection {
 
     // Photo
 
+    /** Handle photo data - i.e. when requested by a getBasee64Photo command */
     onBase64Photo(base64PhotoData: string) {
         // console.log(`Connection: ${this._accountId}:${this._socketId}`, base64PhotoData)
         if (base64PhotoData) {
@@ -353,6 +375,10 @@ export default class Connection {
 
     // SkillsController
 
+    /** 
+     * Receive reponses from the SkillController/SkillHandler(s) and relay them to the connected client
+     * TODO: Make this very rudimentary mechanism more general, intelligent, etc.
+     */
     skillsControllerCallback: SkillsControllerCallbackType = (event: string, messageData: any) => {
         switch (event) {
             case 'init':
@@ -390,7 +416,6 @@ export default class Connection {
                 }
         }
     }
-
 
     dispose() {
 

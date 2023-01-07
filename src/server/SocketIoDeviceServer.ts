@@ -1,8 +1,17 @@
+/**
+ * SocketIoDeviceServer (setupSocketIoDeviceServer) instantiates a socket.io server for Device (robot) clients.
+ * The server uses JWT (via MockJwtAuth)for authentication/permissions.
+ * The server uses ConnectionManager to instantiate a Connection instance for each new socket connection and
+ * to route messages to/from Connection instances.
+ *
+ * @module
+ */
+
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIoServer } from 'socket.io'
-import { JwtAuth } from './auth/JwtAuth'
-import ConnectionManager from 'src/connection/ConnectionManager'
-import { ConnectionEventType, ConnectionType } from 'src/connection/Connection'
+import { MockJwtAuth } from '@auth'
+import { ConnectionManager } from 'src/connection/ConnectionManager'
+import { ConnectionAnalyticsEventType, ConnectionType } from 'src/connection/Connection'
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
 
 
@@ -26,7 +35,7 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
             }
             let decodedAccessToken: any
             try {
-                decodedAccessToken = JwtAuth.decodeAccessToken(token)
+                decodedAccessToken = MockJwtAuth.decodeAccessToken(token)
                 if (process.env.DEBUG === 'true') {
                     console.log('DEBUG: DeviceServer: decoded access token:')
                     console.log(decodedAccessToken)
@@ -49,7 +58,7 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
         socket.emit('message', { source: 'RCH', event: 'handshake', message: 'DEVICE connection accepted' })
 
         socket.on('command', (command: RCSCommand) => {
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.COMMAND_FROM, command.type)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionAnalyticsEventType.COMMAND_FROM, command.type)
             if (command.type === 'hubCommand') {
                 if (process.env.DEBUG === 'true') {
                     console.log(`DEBUG: DeviceServer: on hub command:`, socket.id, socket.data?.accountId, command)
@@ -82,11 +91,10 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
         socket.on('message', (message) => {
             if (process.env.DEBUG === 'true') {
                 console.log(`DEBUG: DeviceServer: on message: ${message}`, socket.id, socket.data.accountId)
+                socket.emit('message', { source: 'RCH', event: 'ack', data: message })
             }
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.MESSAGE_FROM, message.event)
-            ConnectionManager.getInstance().broadcastDeviceMessageToSubscriptionsWithAccountId(socket.data.accountId, { message: message })
-            // TODO: send ack?
-            // socket.emit('message', { source: 'RCH', event: 'ack', data: message })
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionAnalyticsEventType.MESSAGE_FROM, message.event)
+            ConnectionManager.getInstance().broadcastDeviceMessageToSubscriptionsWithAccountId(socket.data.accountId, { message: message })            
         })
 
         socket.once('disconnect', function (reason) {
@@ -106,7 +114,7 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
         socket.on('asrAudio', (data: Buffer) => {
             // console.log(`on asrAudio`, data)
             if (data) {
-                ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionEventType.AUDIO_BYTES_FROM, data.length)
+                ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionAnalyticsEventType.AUDIO_BYTES_FROM, data.length)
                 if (connection) {
                     connection.provideAudio(data)
                 }

@@ -1,9 +1,17 @@
+/** 
+ * ConnectionManager manages Connection instances - Device, Controller and App connections.
+ * Controllers can subscribe to Device messages/commands. ConnectionManager manages these subscriptions.
+ * When a client connects to a server (Device/Controller/App), the ConnectionManager keeps track of the associated Connection by type.
+ * 
+ * @module
+ */
+
 import { Socket } from 'socket.io';
-import Connection, { ConnectionType, ConnectionEventType } from './Connection';
-import Subscription from './Subscription';
+import { Connection, ConnectionType, ConnectionAnalyticsEventType } from './Connection';
+import { Subscription } from './Subscription';
 import { RCSCommand } from 'robokit-command-system'
 
-export default class ConnectionManager {
+export class ConnectionManager {
 
     private static instance: ConnectionManager
 
@@ -103,7 +111,7 @@ export default class ConnectionManager {
         }
     }
 
-    onAnalyticsEvent(type: ConnectionType, socket: Socket, eventType: ConnectionEventType, data?: string | number) {
+    onAnalyticsEvent(type: ConnectionType, socket: Socket, eventType: ConnectionAnalyticsEventType, data?: string | number) {
         const connection = this.getConnectionWithTypeAndSocketId(type, socket.id)
         if (connection) {
             connection.onAnalyticsEvent(eventType, data || '')

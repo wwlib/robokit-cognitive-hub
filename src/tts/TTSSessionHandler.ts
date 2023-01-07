@@ -1,3 +1,11 @@
+/**
+ * TTSSessionHandler provides access to Azure TTS via `cognitiveserviceslib`.
+ *
+ * @module
+ */
+
+// TODO: Use the Azure speech SDK directly instead of using `cognitiveserviceslib`?
+
 import { EventEmitter } from 'events';
 import {
     AzureSpeechClient,
@@ -19,7 +27,7 @@ export interface TTSSessionConfig {
     Microsoft: MicrosoftConfig
 }
 
-export default class TTSSessionHandler extends EventEmitter {
+export class TTSSessionHandler extends EventEmitter {
 
     private _callback: TTSSessionHandlerCallbackType
     // private _logger: Logger
@@ -58,11 +66,6 @@ export default class TTSSessionHandler extends EventEmitter {
             audioStream.on('end', () => {
                 console.log(`TTSSessionHandler: synthesizeStream: end`);
                 if (this._callback) this._callback('ttsAudioEnd', this._targetAccountId, {})
-                // if (this._audioContextAudioSink) this._audioContextAudioSink.play();
-                // this.setState({
-                //     message: `tts: playing:`,
-                //     visualizerSource: this._audioContextAudioSink
-                // });
             });
             audioStream.on('error', (error) => {
                 console.log(`TTSSessionHandler: synthesizeStream: on error:`, error);

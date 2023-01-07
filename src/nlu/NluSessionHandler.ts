@@ -1,9 +1,15 @@
+/**
+ * NLUSessionHandler uses LimaClient to make NLU requests.
+ * 
+ * @module
+ */
+
 import { EventEmitter } from 'events';
 import {
     AzureSpeechClient,
     Logger
 } from 'cognitiveserviceslib'
-import LimaClient, { LimaConfig } from './LimaClient';
+import { LimaClient, LimaConfig } from './LimaClient';
 
 const fs = require('fs-extra')
 const path = require('path')
@@ -14,7 +20,7 @@ export interface NLUSessionConfig {
     Lima: LimaConfig
 }
 
-export default class NLUSessionHandler extends EventEmitter {
+export class NLUSessionHandler extends EventEmitter {
 
     private _callback: NLUSessionHandlerCallbackType
     // private _logger: Logger

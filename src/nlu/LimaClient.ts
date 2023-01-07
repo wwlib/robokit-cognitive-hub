@@ -1,3 +1,10 @@
+/**
+ * LimaClient is an interface to the Lima (Language intelligence Manager Analyzer) service.
+ * It manages the routing of NLU requests to appropriate cognitive services and logs each trasaction for easy review.
+ * 
+ * @module
+ */
+
 const axios = require('axios')
 
 export interface LimaConfig {
@@ -20,7 +27,7 @@ export interface LimaRequestBody {
         environment: string
 }
 
-export default class LimaClient {
+export class LimaClient {
 
     private _limaUrl: string = ''
     private _limaAuthUrl: string = ''

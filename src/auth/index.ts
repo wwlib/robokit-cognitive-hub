@@ -1,2 +1,2 @@
 export * from './ExpressAuthFunctions'
-export * from './JwtAuth'
+export * from './MockJwtAuth'

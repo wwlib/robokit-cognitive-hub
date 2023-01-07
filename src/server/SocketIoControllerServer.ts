@@ -1,14 +1,17 @@
 /**
- * This is the doc comment for SocketIoControllerServer.ts
+ * SocketIoControllerServer (setupSocketIoControllerServer) instantiates a socket.io server for Controller clients.
+ * The server uses JWT (via MockJwtAuth)for authentication/permissions.
+ * The server uses ConnectionManager to instantiate a Connection instance for each new socket connection and
+ * to route messages to/from Connection instances.
  *
  * @module
  */
 
 import { Server as HTTPServer } from 'http'
 import { Server as SocketIoServer } from 'socket.io'
-import { JwtAuth } from './auth/JwtAuth'
-import ConnectionManager from 'src/connection/ConnectionManager'
-import { ConnectionEventType, ConnectionType } from 'src/connection/Connection'
+import { MockJwtAuth } from '@auth'
+import { ConnectionManager } from 'src/connection/ConnectionManager'
+import { ConnectionAnalyticsEventType, ConnectionType } from 'src/connection/Connection'
 import { RCSCommand, RCSCommandType, RCSCommandName } from 'robokit-command-system'
 
 /** setupSocketIoControllerServer is... */
@@ -30,7 +33,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
             }
             let decodedAccessToken: any
             try {
-                decodedAccessToken = JwtAuth.decodeAccessToken(token)
+                decodedAccessToken = MockJwtAuth.decodeAccessToken(token)
                 if (process.env.DEBUG === 'true') {
                     console.log('DEBUG: ControllerServer: decoded access token:')
                     console.log(decodedAccessToken)
@@ -57,7 +60,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
         socket.emit('message', { source: 'RCH:ControllerServer', event: 'handshake', message: 'Controller connection accepted' })
 
         socket.on('command', (command: RCSCommand) => {
-            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_FROM, command.type)
+            ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionAnalyticsEventType.COMMAND_FROM, command.type)
             if (command.type === 'hubCommand') {
                 if (process.env.DEBUG === 'true') {
                     console.log(`DEBUG: ControllerServer: on hub command:`, socket.id, socket.data?.accountId, command)
@@ -103,7 +106,7 @@ export const setupSocketIoControllerServer = (httpServer: HTTPServer, path: stri
 
                 // route command to device
                 if (command && command.targetAccountId) {
-                    ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionEventType.COMMAND_TO, command.type)
+                    ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.CONTROLLER, socket, ConnectionAnalyticsEventType.COMMAND_TO, command.type)
                     ConnectionManager.getInstance().sendCommandToTarget(ConnectionType.DEVICE, command.targetAccountId, command)
                 }
             }

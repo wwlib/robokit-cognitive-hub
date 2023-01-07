@@ -1,9 +1,18 @@
-import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
+/**
+ * CloudSkillSessionHandler manages the interface between the cognitive hub and a "cloud" skill via a socket.io connection.
+ * As an example, it is used to connect to the example "ChitchatSkill" (a separate microservice)
+ *
+ * @module
+ */
+
+// TODO: Need to define a full cloud skill message/command protocol
+
+import { AbstractSkillSessionHandler, SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
 
 const axios = require('axios');
 const { io } = require("socket.io-client");
 
-export default class CloudSkillSessionHandler extends AbstractSkillSessionHandler {
+export class CloudSkillSessionHandler extends AbstractSkillSessionHandler {
 
     private _socket: any
     
@@ -37,6 +46,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
         }
     }
 
+    /** getToken requests an auth token used to connect to the cloud skill microservice. */
     async getToken(authUrl: string, accountId: string, password: string): Promise<string> {
         return new Promise((resolve, reject) => {
             axios.post(authUrl, {
@@ -59,6 +69,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
         });
     }
 
+    /** connect connects to the cloud skill and (in a very rudimentary way) handles reply messages */
     connect(url: string, token: string) {
         if (process.env.DEBUG === 'true') {
             console.log('DEBUG: CloudSkilllSessionHandler: connect URL:', url);
@@ -99,6 +110,7 @@ export default class CloudSkillSessionHandler extends AbstractSkillSessionHandle
         });
     }
 
+    /** onEvent forwards events to the cloud skill. */
     onEvent(event: any) {
         switch (event.event) {
             case 'asrEnd':

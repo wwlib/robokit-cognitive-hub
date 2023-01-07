@@ -2,20 +2,23 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@handlers": [
-        "src/handlers"
-      ],
-      "@types": [
-        "src/types"
+      "@auth": [
+        "src/auth"
       ],
       "@errors": [
         "src/errors"
       ],
+      "@handlers": [
+        "src/handlers"
+      ],
       "@model": [
         "src/model"
       ],
-      "@auth": [
-        "src/auth"
+      "@server": [
+        "src/server"
+      ],
+      "@types": [
+        "src/types"
       ]
     }
   }

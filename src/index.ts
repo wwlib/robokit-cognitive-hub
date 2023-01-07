@@ -1,9 +1,10 @@
 // index.ts
 /**
- * This is the doc comment for index.ts
+ * robokit-cognitive-hub serves as a cloud endpoint for Conversational AI Devices, i.e. robots.
  *
  * @packageDocumentation
  */
+
 import express from 'express'
 import http, { Server } from 'http'
 import { Server as SocketIoServer } from 'socket.io';
@@ -12,8 +13,8 @@ import dotenv from 'dotenv'
 import * as handlers from '@handlers'
 import { ExpressRouterWrapper } from './util/ExpressRouterWrapper'
 // import { WSSRoutes, setupWebSocketServer } from './util/WebSocketServerWrapper'
-import { setupSocketIoDeviceServer } from './SocketIoDeviceServer'
-import { setupSocketIoControllerServer } from './SocketIoControllerServer'
+import { setupSocketIoDeviceServer } from '@server'
+import { setupSocketIoControllerServer } from '@server'
 
 const path = require('path')
 const cors = require('cors');
@@ -64,21 +65,21 @@ export async function main() {
   const expressRouterWrapper = new ExpressRouterWrapper('', serviceOptions)
 
   // AUTH
-  expressRouterWrapper.addGetHandlerNoAuth('/signin', handlers.SiteHandlers.getInstance().signinHandler)
-  expressRouterWrapper.addGetHandlerNoAuth('/forbidden', handlers.SiteHandlers.getInstance().forbiddenHandler)
-  expressRouterWrapper.addGetHandlerNoAuth('/auth', handlers.MockAuthHandlers.getInstance().authHandler)
-  expressRouterWrapper.addGetHandlerNoAuth('/refresh', handlers.MockAuthHandlers.getInstance().refreshHandler)
-  expressRouterWrapper.addPostHandlerNoAuth('/auth', handlers.MockAuthHandlers.getInstance().authHandler)
+  expressRouterWrapper.addGetHandlerNoAuth('/signin', handlers.SiteHandlers.signinHandler)
+  expressRouterWrapper.addGetHandlerNoAuth('/forbidden', handlers.SiteHandlers.forbiddenHandler)
+  expressRouterWrapper.addGetHandlerNoAuth('/auth', handlers.MockAuthHandlers.authHandler)
+  expressRouterWrapper.addGetHandlerNoAuth('/refresh', handlers.MockAuthHandlers.refreshHandler)
+  expressRouterWrapper.addPostHandlerNoAuth('/auth', handlers.MockAuthHandlers.authHandler)
 
   // ADMIN
-  expressRouterWrapper.addGetHandler('/dashboard', handlers.SiteHandlers.getInstance().dashboardHandler, ['example:read'])
-  expressRouterWrapper.addGetHandler('/console', handlers.SiteHandlers.getInstance().consoleHandler, ['example:admin'])
+  expressRouterWrapper.addGetHandler('/dashboard', handlers.SiteHandlers.dashboardHandler, ['example:read'])
+  expressRouterWrapper.addGetHandler('/console', handlers.SiteHandlers.consoleHandler, ['example:admin'])
 
   // UTIL
   expressRouterWrapper.addGetHandler('/time', handlers.TimeHandler, ['example:read'])
 
   // HubControllerApp
-  expressRouterWrapper.addGetHandler('*', handlers.SiteHandlers.getInstance().hubControllerAppHandler, ['example:read'])
+  expressRouterWrapper.addGetHandler('*', handlers.SiteHandlers.hubControllerAppHandler, ['example:read'])
 
   if (expressRouterWrapper) {
     const routerPath = expressRouterWrapper.path !== '' ? `/${expressRouterWrapper.path}` : ''

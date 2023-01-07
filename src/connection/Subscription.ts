@@ -1,9 +1,16 @@
+/** 
+ * A Subscription maintains references to callback functions which are used to relay Commands and Messages
+ * to subscribers: Controller (and App) instances
+ * 
+ * @module
+ */
+
 import { RCSCommand } from "robokit-command-system"
 
 export type SubscriptionCommandCallback = (command: RCSCommand, ) => void
 export type SubscriptionMessageCallback = (message: unknown, ) => void
 
-export default class Subscription {
+export class Subscription {
     private _accountId: string
     private _subscriberAccountId: string
     private _commandCallback: SubscriptionCommandCallback | undefined

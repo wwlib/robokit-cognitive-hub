@@ -1,13 +1,21 @@
-import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
+/**
+ * ClockSkillSessionHandler is a trivial example implementation of AbstractSkillSessionHandler.
+ * It returns the server time in the form of a text reply (should really be the device's local time).
+ *
+ * @module
+ */
+
+import { AbstractSkillSessionHandler, SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
 
 const timeToText = require('convert-time-to-text');
 
-export default class ClockSkillSessionHandler extends AbstractSkillSessionHandler {
+export class ClockSkillSessionHandler extends AbstractSkillSessionHandler {
 
     constructor(callback: SkillSessionHandlerCallbackType, skillData: any, deviceAccountId: string, devicePassword: string) {
         super(callback, skillData, deviceAccountId, devicePassword)
     }
 
+    /** getTimeReply generates a text reply using `timeToText.convertTimeToText()` */
     getTimeReply(asrText: string): any {
         let reply: any = undefined
         if (asrText) {
@@ -27,6 +35,7 @@ export default class ClockSkillSessionHandler extends AbstractSkillSessionHandle
         return reply
     }
 
+    /** onEvent A rudimentary skill example that generates an appropriate response. Should respond to NLU events rather than ASR events. */
     onEvent(event: any) {
         let reply: any
         switch (event.event) {
@@ -38,6 +47,7 @@ export default class ClockSkillSessionHandler extends AbstractSkillSessionHandle
                 break;
             case 'nluEnd':
                 console.log(`ClockSkillSessionHandler: onNluEnd:`, event)
+                // TODO: respond to NLU events rather than ASR events...
                 break;
         }
     }

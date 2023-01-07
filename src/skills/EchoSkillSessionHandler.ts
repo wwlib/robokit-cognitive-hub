@@ -1,11 +1,19 @@
-import AbstractSkillSessionHandler, { SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
+/**
+ * EchoSkillSessionHandler is a trivial example implementation of AbstractSkillSessionHandler.
+ * It echos the teck of any message it receives. i.e. "you said, <ORIGINAL_TEXT>"
+ *
+ * @module
+ */
 
-export default class EchoSkillSessionHandler extends AbstractSkillSessionHandler {
+ import { AbstractSkillSessionHandler, SkillSessionHandlerCallbackType } from './AbstractSkillSessionHandler'
+
+export class EchoSkillSessionHandler extends AbstractSkillSessionHandler {
 
     constructor(callback: SkillSessionHandlerCallbackType, skillData: any, deviceAccountId: string, devicePassword: string) {
         super(callback, skillData, deviceAccountId, devicePassword)
     }
 
+    /** onEvent A rudimentary skill example that generates an appropriate response. Should also respond to NLU events rather than ASR events. */
     onEvent(event: any) {
         switch (event.event) {
             case 'asrEnd':

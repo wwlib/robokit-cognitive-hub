@@ -1,10 +1,16 @@
+/** 
+ * ExpressAuthFunctions is a collection of auth-related functions for use with Express (HTTP) and sockets (ws).
+ * 
+ * @module
+ */
+
 import { Response, NextFunction } from 'express'
 import { AuthRequest } from '@types'
 import * as errors from '@errors'
 import { IncomingMessage } from 'http'
 import { WebSocketServer } from 'ws'
 import { Duplex } from 'stream'
-import { JwtAuth, ACCESS_TOKEN_NAME, REFRESH_TOKEN_NAME } from './JwtAuth'
+import { MockJwtAuth, ACCESS_TOKEN_NAME, REFRESH_TOKEN_NAME } from './MockJwtAuth'
 import { StatusCodes } from 'http-status-codes'
 
 export const noAuthHttp = () =>
@@ -12,6 +18,11 @@ export const noAuthHttp = () =>
     next()
   };
 
+/**
+ * Takes a list of expected permissions and returns a function that checks the permissions against those found in the user's access_token (JWT).
+ * @param permissions An array of expcted permissions (strings)
+ * @returns A function that is evaluated for each request
+ */
 export const authHttp = (permissions: string[]) =>
   function authWithPermissions(req: AuthRequest, res: Response, next: NextFunction) {
     let expectedPermissions: string[] = permissions
@@ -25,7 +36,7 @@ export const authHttp = (permissions: string[]) =>
       if (!accessToken && req.cookies) {
         accessToken = req.cookies[ACCESS_TOKEN_NAME] as string
       }
-      const decodedAccessToken = JwtAuth.decodeAccessToken(accessToken, refreshToken)
+      const decodedAccessToken = MockJwtAuth.decodeAccessToken(accessToken, refreshToken)
       const accountId = decodedAccessToken ? decodedAccessToken.accountId : ''
       checkPermissions(expectedPermissions, decodedAccessToken)
       req.auth = {
@@ -76,7 +87,7 @@ export const checkPermissions = (expectedPermissions: string[], decodedAccessTok
   }
 }
 
-//// WebSocket Auth
+//// WebSocket Auth - for reference (for use with ws sockets, not socket.io sockets)
 
 export const getTokenFromWebsocket = (req: IncomingMessage): string | undefined => {
   let token = req.headers.authorization?.split('Bearer ').pop()
@@ -99,7 +110,7 @@ export const socketAuthorization = (req: IncomingMessage) => {
   }
 
   try {
-    return JwtAuth.decodeAccessToken(token)
+    return MockJwtAuth.decodeAccessToken(token)
   } catch (error: any) {
     // TODO: remove log & throw
     console.error(`ExpressAuthFunctions: socketAuthorization error`, error)

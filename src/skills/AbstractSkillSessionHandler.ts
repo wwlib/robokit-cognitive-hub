@@ -1,3 +1,10 @@
+/**
+ * A SkillSessionHandler manages the interface between the cognitive hub and a skill.
+ * A skill can be a local object/class instance or a remote microservice accessed via socket.io.
+ *
+ * @module
+ */
+
 import { EventEmitter } from 'events';
 import {
     Logger
@@ -6,7 +13,8 @@ import { SkillData } from './SkillsManager';
 
 export type SkillSessionHandlerCallbackType = (event: string, data?: any) => void
 
-export default abstract class AbstractSkillSessionHandler extends EventEmitter {
+/** The abstract SkillSessionHandler */
+export abstract class AbstractSkillSessionHandler extends EventEmitter {
 
     protected _callback: SkillSessionHandlerCallbackType
     protected _logger: Logger

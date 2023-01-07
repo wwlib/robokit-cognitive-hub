@@ -1,5 +1,11 @@
-import ConnectionManager from "src/connection/ConnectionManager";
-import Connection, { ConnectionType } from "src/connection/Connection";
+/** 
+ * Model is a placeholder - for managing global application data and state.
+ * 
+ * @module
+ */
+
+import { ConnectionManager } from "src/connection/ConnectionManager";
+import { Connection, ConnectionType } from "src/connection/Connection";
 
 export class Model {
     private static _instance: Model;
