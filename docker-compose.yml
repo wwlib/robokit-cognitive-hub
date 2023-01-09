@@ -1,22 +1,22 @@
 version: '3.0'
 services:
   hub:
-    image: robokit-cognitive-hub
-    # image: registry.digitalocean.com/wwlib-registry/reasongraph-service:robokit-cognitive-hub
+    # image: robokit-cognitive-hub
+    image: wwlib/robokit:robokit-cognitive-hub
     env_file:
       - hub.env
     ports:
       - '8082:8082'
   chitchat:
-    image: robokit-cloud-skill
-    # image: registry.digitalocean.com/wwlib-registry/reasongraph-service:robokit-cloud-skill
+    # image: robokit-cloud-skill
+    image: wwlib/robokit:robokit-cloud-skill
     env_file:
       - chitchat.env
     ports:
       - '8083:8083'
-  lima-service:
-    image: lima-service
-    # image: registry.digitalocean.com/wwlib-registry/reasongraph-service:robokit-cloud-skill
+  lima:
+    # image: lima-service
+    image: wwlib/robokit:lima-service
     env_file:
       - lima-service.env
     ports:
