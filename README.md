@@ -40,7 +40,18 @@ For details about the project structure, see: [A Nodejs Microservice Template](h
 
 ### build
 
-`npm run build`
+- checkout the [robokit-hub-controller](https://github.com/wwlib/robokit-hub-controller) module (react app) so it is a peer of robokit-cognitive-hub
+- build the robokit-hub-controller module
+- then: 
+```
+npm run copy-hub-controller
+npm run build
+```
+
+### module dependencies
+
+- checkout, build & start the [robokit-cloud-skill](https://github.com/wwlib/robokit-cloud-skill) project
+- checkout, build & start the [lima-service](https://github.com/wwlib/lima-service) project
 
 ### run
 
@@ -73,6 +84,16 @@ AZURE_SPEECH_REGION=eastus
 `docker run -it --rm -p 8082:8082 --env-file ./.env robokit-cognitive-hub` 
 - or `npm run docker:run`
 
+### docker compose
+
+- copy the files from docs/docker to a new directory
+- add your AZURE_SPEECH_SUBSCRIPTION_KEY to hub.env
+- add your LUIS_endpoint and LUIS_subscriptionKey to lima.env
+- then:
+
+```
+docker compose up -d
+```
 
 ### curl
 
@@ -102,6 +123,14 @@ http://localhost:8082/dashboard
 ### http - example console
 
 http://localhost:8082/console
+
+
+### testing the cognitive hub service
+
+- verify that the service is running by opening the hub Controller app at: http://localhost:8082
+- verify that the ASR service working using the cli test app: `socket-cli-device.js` (see below)
+- checkout, build & start the [cognitive-services-test-app](https://github.com/wwlib/cognitive-services-test-app) project
+- use the `cognitive-services-test-app` as a "robot" client to test the cognitive hub
 
 ### cli socket validation client (REPL)
 
