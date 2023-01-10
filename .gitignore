@@ -138,7 +138,3 @@ ttsSession-out-*.wav
 
 # a copy of the frontend app for inclusion in the docker container
 hub-controller-app
-
-hub.env
-chitchat.env
-lima-service.env

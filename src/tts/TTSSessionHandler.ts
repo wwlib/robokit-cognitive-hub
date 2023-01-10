@@ -51,7 +51,7 @@ export class TTSSessionHandler extends EventEmitter {
             const audioStream: NodeJS.ReadableStream = await this._azureSpeechClient.synthesizeStream(inputText)
             // console.log(audioStream);
             if (process.env.DEBUG === 'true') {
-                const filename = `ttsSession-out-${this._socketId}.wav`
+                const filename = `ttsSession-out.wav` // -${this._socketId}
                 console.log(`DEBUG: TTSSessionHandler: piping TTS audio to ${filename}:`)
                 const file = fs.createWriteStream(path.resolve(filename));
                 audioStream.pipe(file);
