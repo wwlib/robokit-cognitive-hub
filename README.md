@@ -1,6 +1,8 @@
 # robokit-cognitive-hub
 
-robokit-cognitive-hub serves as a cloud endpoint for Conversational AI Devices, i.e. robots.
+![robokit-logo](./docs/media/robokit-logo.png)
+
+robokit-cognitive-hub serves as a cloud endpoint for conversational ai devices, i.e. robots.
 
 robokit-cognitive-hub is a lightweight microservice with the essential features needed to develop robust voice-driven applications. 
 
