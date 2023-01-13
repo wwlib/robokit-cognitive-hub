@@ -22,6 +22,9 @@ Features include:
 - Remote control of Devices by Contoller clients - i.e. human-in-the-loop Woz (Wizard of Oz) Controllers
 - Routing of events to/from external App clients for integration with existing applications - i.e. realtime integration with game services
 
+### version
+
+v0.0.1 (alpha)
 
 
 
