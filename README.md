@@ -1,6 +1,6 @@
 # robokit-cognitive-hub
 
-![robokit-logo](./docs/media/robokit-logo.png)
+![robokit-logo](./docs/media/robokit-logo-with-robots-blue.png)
 
 robokit-cognitive-hub serves as a cloud endpoint for conversational ai devices, i.e. robots.
 
