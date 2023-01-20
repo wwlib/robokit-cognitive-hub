@@ -88,9 +88,9 @@ export const setupSocketIoDeviceServer = (httpServer: HTTPServer, path: string):
             }
         })
 
-        socket.on('message', (message) => {
+        socket.on('message', (message: any) => {
             if (process.env.DEBUG === 'true') {
-                console.log(`DEBUG: DeviceServer: on message: ${message}`, socket.id, socket.data.accountId)
+                console.log(`DEBUG: DeviceServer: on message:`, socket.id, socket.data.accountId, message)
                 socket.emit('message', { source: 'RCH', event: 'ack', data: message })
             }
             ConnectionManager.getInstance().onAnalyticsEvent(ConnectionType.DEVICE, socket, ConnectionAnalyticsEventType.MESSAGE_FROM, message.event)
