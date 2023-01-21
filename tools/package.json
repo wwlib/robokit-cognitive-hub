@@ -9,11 +9,7 @@
   "author": "Andrew Rapo <andrew@wwlib.org> (http://wwlib.org/)",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.24.0",
-    "cognitiveserviceslib": "github:wwlib/cognitiveserviceslib#v0.1.3",
-    "promise": "^8.1.0",
-    "socket.io-client": "^4.5.1",
-    "timesync": "^1.0.10",
+    "timesync": "^1.0.11",
     "wav": "^1.0.2",
     "wavefile": "^11.0.0"
   }

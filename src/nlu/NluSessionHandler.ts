@@ -1,18 +1,14 @@
 /**
- * NLUSessionHandler uses LimaClient to make NLU requests.
- * 
+ * NLUSessionHandler uses LimaClient to make NLU requests via LIMA (https://github.com/wwlib/lima-service).
+ * - see docs/docker/docker-compose.yml for an example of a typical LIMA service configuration
  * @module
  */
 
 import { EventEmitter } from 'events';
-import {
-    AzureSpeechClient,
-    Logger
-} from 'cognitiveserviceslib'
 import { LimaClient, LimaConfig } from './LimaClient';
 
-const fs = require('fs-extra')
-const path = require('path')
+// const fs = require('fs-extra')
+// const path = require('path')
 
 export type NLUSessionHandlerCallbackType = (event: string, targetAccountId: string, data?: any) => void
 

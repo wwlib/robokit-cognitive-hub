@@ -22,6 +22,7 @@
     "docker:run": "docker run -it --rm -p 8082:8082 --env-file ./.env robokit-cognitive-hub"
   },
   "dependencies": {
+    "axios": "^1.2.3",
     "cognitiveserviceslib": "github:wwlib/cognitiveserviceslib#feature/andrew/asr-tweaks",
     "convert-time-to-text": "^7.0.0",
     "cookie-parser": "^1.4.6",
@@ -33,7 +34,7 @@
     "handlebars": "^4.7.7",
     "handlebars-loader": "^1.7.3",
     "http-status-codes": "^2.1.4",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "pino-pretty": "^7.1.0",
     "promise": "^8.3.0",
     "robokit-command-system": "github:wwlib/robokit-command-system#100e927a9336562f6e840f3961dc91ac8009b3d4",
@@ -64,7 +65,6 @@
     "tsconfig-paths-webpack-plugin": "^3.5.1",
     "typedoc": "^0.22.18",
     "typescript": "4.4.3",
-    "uuid": "^8.3.2",
     "webpack": "^5.58.2",
     "webpack-cli": "^4.9.1",
     "webpack-node-externals": "^3.0.0"
