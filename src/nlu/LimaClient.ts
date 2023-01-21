@@ -1,6 +1,9 @@
 /**
- * LimaClient is an interface to the Lima (Language intelligence Manager Analyzer) service.
- * It manages the routing of NLU requests to appropriate cognitive services and logs each trasaction for easy review.
+ * LimaClient is an interface to the LIMA Service (Language Intelligence Manager Analyzer).
+ * - https://github.com/wwlib/lima-service
+ * - see docs/docker/docker-compose.yml for an example of a typical LIMA service configuration
+ * 
+ * LIMA manages the routing of NLU requests to appropriate cognitive services and logs each trasaction for easy review.
  * 
  * @module
  */

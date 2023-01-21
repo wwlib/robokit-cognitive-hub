@@ -134,7 +134,9 @@ junit.xml
 hide
 !tools/.env
 asrSession-out.wav
+ttsSession-out.wav
 ttsSession-out-*.wav
+.ipynb_checkpoints
 
 # a copy of the frontend app for inclusion in the docker container
 hub-controller-app

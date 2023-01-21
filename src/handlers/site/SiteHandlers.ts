@@ -111,9 +111,9 @@ export class SiteHandlers {
         }
     }
 
-    static redirectToHubControllerApHandler: Handler = async (req: AuthRequest, res: Response) => {
-        res.status(StatusCodes.OK).redirect('/');
-    }
+    // static redirectToHubControllerApHandler: Handler = async (req: AuthRequest, res: Response) => {
+    //     res.status(StatusCodes.OK).redirect('/');
+    // }
 
     static getConsoleContent(accountId: string | undefined, command: string, summary: string, details: string) {
         return console_handlebars({ linkStates: { dashboard: '', console: 'active' }, accountId: accountId, command, requestCount: Model.getInstance().requestCount, summary, details })
