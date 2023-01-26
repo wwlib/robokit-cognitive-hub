@@ -1,0 +1,39 @@
+{
+    "metadata": [
+        {
+            "key": "lima:metadata:luis/robo-dispatch",
+            "appName": "luis/robo-dispatch",
+            "appId": "",
+            "appVersion": "1.0",
+            "serviceType": "luis",
+            "serviceConfig": {
+                "LUIS_SUBSCRIPTION_KEY": "",
+                "LUIS_ENDPOINT": "",
+                "confidenceMinThreshold": "0.1"
+            },
+            "intents": [],
+            "categories": [],
+            "isDefault": true
+        },
+        {
+            "key": "lima:metadata:gpt3text/robo-chitchat-jan-2023",
+            "appName": "gpt3text/robo-chitchat-jan-2023",
+            "appId": "",
+            "appVersion": "0.1",
+            "serviceType": "gpt3text",
+            "serviceConfig": {
+                "OPENAI_API_KEY": "",
+                "completionOptions": {
+                    "stop": " END",
+                    "presence_penalty": 2.0,
+                    "frequency_penalty": 2.0,
+                    "temperature": 0.0,
+                    "max_tokens": 100
+                }
+            },
+            "intents": [],
+            "categories": [],
+            "isDefault": false
+        }
+    ]
+}
