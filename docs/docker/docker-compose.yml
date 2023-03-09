@@ -14,6 +14,16 @@ services:
       - chitchat.env
     ports:
       - '8083:8083'
+  redislima:
+    image: redislabs/redismod
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    # ports:
+    #   - '6379:6379'
+    volumes:
+      - redis_data_lima:/data
   lima:
     # image: lima-service
     image: wwlib/robokit:lima-service
@@ -21,3 +31,9 @@ services:
       - lima-service.env
     ports:
       - '8084:8084'
+    volumes:
+      - ./.limarc.json:/usr/app/.limarc.json
+
+volumes:
+  redis_data_lima:
+    external: false
